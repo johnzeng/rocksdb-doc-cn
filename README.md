@@ -15,6 +15,8 @@
 		- [向前搜索](SeekForPrev.md)
 		- [尾部迭代器](tailing-iteration.md)
 		- [读-修改-写操作符](Merge-operator.md)
+        - [列族](Column-Families.md)
+        - [快照](Snapshot.md)
 	- 选项
 		- [基础选项以及调优](Setup-Options-and-Basic-Tuning.md)
 		- [选项字符串以及选项Map](Option-String-and-Option-Map.md)
