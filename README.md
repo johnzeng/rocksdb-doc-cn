@@ -16,6 +16,11 @@
 		- [尾部迭代器](tailing-iteration.md)
 		- [读-修改-写操作符](Merge-operator.md)
         - [列族](Column-Families.md)
+        - [创建以及导入SST文件](Creating-and-Ingesting-SST-files.md)
+        - [单删除](Single-Delete.md)
+        - [低优先级写入]
+        - [生存时间(TTL)支持]
+        - [事务]
         - [快照](Snapshot.md)
 	- 选项
 		- [基础选项以及调优](Setup-Options-and-Basic-Tuning.md)
