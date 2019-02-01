@@ -18,8 +18,8 @@
         - [列族](Column-Families.md)
         - [创建以及导入SST文件](Creating-and-Ingesting-SST-files.md)
         - [单删除](Single-Delete.md)
-        - [低优先级写入]
-        - [生存时间(TTL)支持]
+        - [低优先级写入](low-priority-write.md)
+        - [生存时间(TTL)支持](Time-to-Live.md)
         - [事务]
         - [快照](Snapshot.md)
 	- 选项
