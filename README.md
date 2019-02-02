@@ -26,6 +26,8 @@
 		- [基础选项以及调优](Setup-Options-and-Basic-Tuning.md)
 		- [选项字符串以及选项Map](Option-String-and-Option-Map.md)
 		- [配置文件](RocksDB-Options-File.md)
+    - [压缩](compression.md)
+        - [字典压缩](Dictionary-Compression.md)
 
 # TODO
 
