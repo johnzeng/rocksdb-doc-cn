@@ -29,6 +29,8 @@
     - [压缩](compression.md)
         - [字典压缩](Dictionary-Compression.md)
     - [IO](IO.md)
+        - [限流器](rate-limiter.md)
+        - [直接IO](direct-io.md)
 
 # TODO
 
