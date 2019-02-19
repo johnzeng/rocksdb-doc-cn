@@ -31,6 +31,7 @@
     - [IO](IO.md)
         - [限流器](rate-limiter.md)
         - [直接IO](direct-io.md)
+    - [后台错误](background-error.md)
 
 # TODO
 
