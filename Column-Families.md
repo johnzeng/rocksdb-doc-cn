@@ -25,39 +25,32 @@ RocksDB的每个键值对都与唯一一个列族（column family）结合。如
 Options, ColumnFamilyOptions, DBOptions
 
 在[include/rocksdb/options.h](https://github.com/facebook/rocksdb/blob/master/include/rocksdb/options.h)中定义，Options结构定义RocksDB的行为和性能。以前，每个option都被定义在单独的Options结构体里。现在，对单个列族的配置，会被定义在ColumnFamilyOptions，然后那些针对整个RocksDB实例的配置会被定义在DBOptions。Options结构体同时继承ColumnFamilyOptions和DBOptions，你仍旧可以用它来设置所有针对只有一个类族的DB实例的配置。
---
 
 ColumnFamilyHandle
 
 列族通过ColumnFamilyHandle调用和引用。可以把它当成一个打开的文件描述符。在你删除DB指针前，你需要删除所有所有ColumnFamilyHandle。一个有趣的事实：即时一个ColumnFamilyHandle指向一个已经删除的列族，你还是可以继续使用它。数据只有在你将所有存在的ColumnFamilyHandle都删除了，才会被清除。
---
 
 DB::Open(const DBOptions& db_options, const std::string& name, const std::vector<ColumnFamilyDescriptor>& column_families, std::vector<ColumnFamilyHandle*>* handles, DB** dbptr);
 
 当使用读写模式打开一个DB的时候，你需要声明所有已经存在于DB的列族。如果不是，DB::Open会返回 Status::InvalidArgument()，你可以用一个ColumnFamilyDescriptors的vector来声明列族。ColumnFamilyDescriptors是一个只有列族名和ColumnFamilyOptions的结构体。Open会返回一个Status以及一个ColumnFamilyHandle指针的vector，你可以用他们来引用这些列族。删除DB指针前请确保你已经删除了所有ColumnFamilyHandle。
---
+
 
 DB::OpenForReadOnly(const DBOptions& db_options, const std::string& name, const std::vector<ColumnFamilyDescriptor>& column_families, std::vector<ColumnFamilyHandle*>* handles, DB** dbptr, bool error_if_log_file_exist = false)
 
 行为与DB::Open类似，只不过他用只读模式打开DB。其中一个比较大的差别是，如果用只读模式打开DB，你不需要声明所有列族——你可以只打开一个列族的子集。
---
 
 DB::ListColumnFamilies(const DBOptions& db_options, const std::string& name, std::vector<std::string>* column_families)
 
 ListColumnFamilies是一个静态方法，会返回当前DB里面存在的列族
---
+
 
 DB::CreateColumnFamily(const ColumnFamilyOptions& options, const std::string& column_family_name, ColumnFamilyHandle** handle)
 
 指定一个名字和配置，创建一个列族，然后在参数里面返回一个ColumnFamilyHandle。
 
---
-
 DropColumnFamily(ColumnFamilyHandle* column_family)
 
 删除ColumnFamilyHandle指向的列族。注意，实际的数据在客户端调用delete column_family之前 并不会被删除。只要你还有column_family，你就还可以继续使用这个列族。
-
---
 
 DB::NewIterators(const ReadOptions& options, const std::vector<ColumnFamilyHandle*>& column_families, std::vector<Iterator*>* iterators)
 
