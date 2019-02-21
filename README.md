@@ -33,6 +33,7 @@
         - [直接IO](direct-io.md)
     - [后台错误处理](background-error-handling.md)
     - [MANIFEST](MANIFEST.md)
+    - [块缓存](Block-Cache.md)
 
 
 # TODO
