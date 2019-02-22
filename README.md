@@ -37,6 +37,7 @@
     - [Memtable](MemTable.md)
     - [巨型页帧支持](Allocating-Some-Indexes-and-Bloom-Filters-using-Huge-Page-TLB.md)
     - [WAL日志](Write-Ahead-Log.md)
+        - [WAL日志格式](Write-Ahead-Log-File-Format.md)
 
 # TODO
 
