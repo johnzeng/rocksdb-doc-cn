@@ -57,3 +57,46 @@ db->Flush(FlushOptions(), handles[0]);
 # WAl配置
 
 
+下面这些配置可以在[options.h](https://github.com/facebook/rocksdb/blob/5.10.fb/include/rocksdb/options.h)中找到
+
+## DBOptions::wal_dir
+
+DBOptions::wal_dir用于设置RocksDB存储WAL文件的目录，这允许用户把WAL和实际数据分开存储
+
+## DBOptions::WAL_ttl_seconds, DBOptions::WAL_size_limit_MB
+
+这两个选项影响WAL文件删除的时间。非0参数表示时间和硬盘空间的阀值，超过这个阀值，会触发删除归档的WAL文件。参考源文件以了解更多内容
+
+## DBOptions::max_total_wal_size
+
+如果希望限制WAL的大小，RocksDB使用DBOptions::max_total_wal_size作为列族落盘的触发器。一旦WAL超过这个大小，RocksDB会开始强制列族落盘，以保证删除最老的WAL文件。这个配置在列族以不固定频率更新的时候非常有用。如果没有大小限制，如果这个WAL中有一些非常低频更新的列族的数据没有落盘，用户可能会需要保存非常老的WAL文件。
+
+## DBOptions::avoid_flush_during_recovery
+
+选项名已经说明了他的用途（回复过程中避免落盘）
+
+## DBOptions::manual_wal_flush
+
+DBOptions::manual_wal_flush决定WAL是每次写操作之后自动flush还是纯人工flush（用户必须调用FlushWAL来触发一个WAL flush）
+
+## DBOptions::wal_filter
+
+通过DBOptions::wal_filter，用户可以提供一个在回复过程中处理WAL文件时被调用的filter对象。注意：ROCKSDB_LITE模式不支持该选项。
+
+## WriteOptions::disableWAL
+
+如果用户依赖于其他写日志方式，或者不担心数据丢失，WriteOptions::disableWAL就非常有用了
+
+# WAL 过滤器
+
+## 事务日志迭代器
+
+事务日志迭代器提供一种方法，用来在RocksDB实例间复制数据。一旦一个WAL因为列族被落盘而被归档，WAL不会马上被删掉。这是为了允许事务日志迭代器可以继续读取WAL文件，再发送给从节点。
+
+## 相关内容
+
+[WAL恢复模式](WAL-Recovery-Modes.md)
+[WAL日志格式](Write-Ahead-Log-File-Format.md)
+
+
+
