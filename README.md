@@ -39,6 +39,7 @@
     - [WAL日志](Write-Ahead-Log.md)
         - [WAL日志格式](Write-Ahead-Log-File-Format.md)
         - [WAL恢复模式](WAL-Recovery-Modes.md)
+    - [写缓冲管理器](Write-Buffer-Manager.md)
 
 # TODO
 
