@@ -41,6 +41,7 @@
         - [WAL恢复模式](WAL-Recovery-Modes.md)
     - [写缓冲管理器](Write-Buffer-Manager.md)
     - [压缩/compaction](Compaction.md)
+        - [leveled-compaction](Leveled-Compaction.md)
 
 # TODO
 
