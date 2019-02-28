@@ -106,7 +106,7 @@ FIFO 风格的压缩在淘汰的时候把最老的文件丢弃，可以被用于
 - CompactionOptionsUniversal::min_merge_width —— 一次压缩中最小的文件数量。默认：2
 - CompactionOptionsUniversal::max_merge_width —— 一次压缩中最大的文件数量。默认：UINT_MAX
 - CompactionOptionsUniversal::max_size_amplification_percent —— 空间放大被定义为一个byte的数据存储在硬盘上需要多少额外的存储空间。例如，一个空间放大为2%意味着一个持有100byte用户数据的数据库，需要占用102byte的物理存储。通过这个定义，一个完全压缩的数据库的空间放大为0%。RocksDB用下面公式计算空间放大率：假设所有文件，除了最早的文件以外，都计算进空间放大中。默认200，这意味着一个100byte的数据库可能需要占用300byte存储。
-- CompactionOptionsUniversal::compression_size_percent —— 如果这个选项被设置为-1（默认值），所有的输出文件都会根据指定的压缩（compress）类型进行压缩（compress）。如果这个选项不是负数，我们会尝试确保压缩（compress）大小刚好比这个值大。正常情况下，至少这个比例的数据会被压缩。当我们把压缩（compact）到一个新的文件，他是不是需要被压缩（compress）的标准是这样的：假设根据生成时间排序的文件列表如下:[A1....An B1....Bm C1....Ct]，A1是最新的，而Ct时最老的，我们将把C1...Ct压缩[compact]，我们计算所有的文件大小为总的大小total_size，我们把C1...Ct的总大小计算为total_C，如果total_C / total_size < compression_size_percent，压缩（compact）输出的文件会被压缩（compress）。
+- CompactionOptionsUniversal::compression_size_percent —— 如果这个选项被设置为-1（默认值），所有的输出文件都会根据指定的压缩（compress）类型进行压缩（compress）。如果这个选项不是负数，我们会尝试确保压缩（compress）大小刚好比这个值大。正常情况下，至少这个比例的数据会被压缩。当我们把压缩（compact）到一个新的文件，他是不是需要被压缩（compress）的标准是这样的：假设根据生成时间排序的文件列表如下:[A1....An B1....Bm C1....Ct]，A1是最新的，而Ct时最老的，我们将把B1...Bm压缩[compact]，我们计算所有的文件大小为总的大小total_size，我们把C1...Ct的总大小计算为total_C，如果total_C / total_size < compression_size_percent，压缩（compact）输出的文件会被压缩（compress）。（这个行为看起来很诡异，但是代码确实是这么写的。。。）
 - CompactionOptionsUniversal::stop_style —— 停止选取下一个文件的算法条件。可以是kCompactionStopStyleSimilarSize（选择相似大小的文件）或者kCompactionStopStyleTotalSize（选取的文件的总大小>下一个文件）。默认为kCompactionStopStyleTotalSize
 
 ## FIFO压缩风格
