@@ -1,6 +1,6 @@
 写缓冲管理器帮助用户控制多个列族及DB实例中的memtables的总的内存使用。通过这个，用户可以实现：
 
-- 尝试限制多个列族和DB实例总的memtable使用量到一定的阀值下。
+- 尝试限制多个列族和DB实例总的memtable使用量到一定的阈值下。
 - 允许memtable使用块缓存
 
 写缓冲管理器跟rate_limiter和sst_file_manager很相似。用户创建一个写缓冲管理器对象，然后把他传递给所有你希望控制总内存空间的列族和DB。参考write_buffer_manager.h中的注释来了解如何使用。

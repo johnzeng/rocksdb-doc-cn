@@ -4,7 +4,7 @@ RocksDB提供一组选项给用户来决定IO应该如何执行
 
 ## 范围Sync
 
-RocksDB的数据文件通常通过追加的形式生成。文件系统会选择把写入缓冲起来直到脏页达到一个阀值，然后把所有这些页面都写出。这可能会造成突发写IO，导致线上的IO等待过久，导致高查询延迟。你可以要求RocksDB周期性通知OS把已经存在的脏页写出，具体做法就是为SST文件设置options.bytes_per_sync，为WAL文件设置options.wal_bytes_per_sync。在底层，每当一个文件到达这个大小的时候，他就会调用Linux的sync_file_range。当前使用的页不会被包含在范围Sync中。
+RocksDB的数据文件通常通过追加的形式生成。文件系统会选择把写入缓冲起来直到脏页达到一个阈值，然后把所有这些页面都写出。这可能会造成突发写IO，导致线上的IO等待过久，导致高查询延迟。你可以要求RocksDB周期性通知OS把已经存在的脏页写出，具体做法就是为SST文件设置options.bytes_per_sync，为WAL文件设置options.wal_bytes_per_sync。在底层，每当一个文件到达这个大小的时候，他就会调用Linux的sync_file_range。当前使用的页不会被包含在范围Sync中。
 
 ## 限流器
 

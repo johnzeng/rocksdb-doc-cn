@@ -1,4 +1,4 @@
-使用RocksDB的时候，用户可能因为许多原因，希望控制最大写速度在一个范围。例如，闪存写的时候如果超过特定阀值，会引发严重的读延迟峰值。因为你已经在读这篇文章，我相信你已经知道为什么你需要一个限流器。事实上，RocksDB自带一个[限流器](https://github.com/facebook/rocksdb/blob/master/include/rocksdb/rate_limiter.h)，在大多数场景，应该都是够用了。
+使用RocksDB的时候，用户可能因为许多原因，希望控制最大写速度在一个范围。例如，闪存写的时候如果超过特定阈值，会引发严重的读延迟峰值。因为你已经在读这篇文章，我相信你已经知道为什么你需要一个限流器。事实上，RocksDB自带一个[限流器](https://github.com/facebook/rocksdb/blob/master/include/rocksdb/rate_limiter.h)，在大多数场景，应该都是够用了。
 
 # 如何使用
 

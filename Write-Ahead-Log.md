@@ -65,7 +65,7 @@ DBOptions::wal_dir用于设置RocksDB存储WAL文件的目录，这允许用户�
 
 ## DBOptions::WAL_ttl_seconds, DBOptions::WAL_size_limit_MB
 
-这两个选项影响WAL文件删除的时间。非0参数表示时间和硬盘空间的阀值，超过这个阀值，会触发删除归档的WAL文件。参考源文件以了解更多内容
+这两个选项影响WAL文件删除的时间。非0参数表示时间和硬盘空间的阈值，超过这个阀值，会触发删除归档的WAL文件。参考源文件以了解更多内容
 
 ## DBOptions::max_total_wal_size
 
