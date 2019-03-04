@@ -269,4 +269,97 @@ size_ratio_trigger = 100 + options.compaction_options_universal.size_ratio / 100
 下面这些选项影响universal压缩：
 
 
+- options.compaction_options_universal ： 上面提到的许多选项
+- options.level0_file_num_compaction_trigger ： 任何压缩的触发条件。他还意味着，在所有压缩结束之后，排序结果的数量会小于options.level0_file_num_compaction_trigger+1
+- options.level0_slowdown_writes_trigger：如果排序结果的数量超过这个数值，写入会被强制减慢。
+- options.level0_stop_writes_trigger：如果排序结果超过这个值，写入会停止，直到压缩结束，并且排序结果变得比这个值低
+- options.num_levels： 如果这个值为1，所有排序结果都会被放在level0的文件中。否则，我们会尝试尽可能地填充非零层。options.num_levels越大，我们约不会再level 0存放大文件
+- options.target_file_size_base：如果options.num_levels > 1才有效。除了level 0以外的文件都会被裁减到不大于这个阈值的大小。
+- options.target_file_size_multiplier：这是有效的，但是我们没有找到一个合理的场景来使用这个选项。所以我们不推荐你调这个选项
+
+下面这些选项 **不会** 影响universal压缩：
+
+- options.max_bytes_for_level_base: 只影响level-based压缩
+-	options.level_compaction_dynamic_level_bytes: 只影响level-based压缩
+-	options.max_bytes_for_level_multiplier 与 options.max_bytes_for_level_multiplier_additional: 只影响level-based压缩
+-	options.expanded_compaction_factor: 只影响level-based压缩
+- options.source_compaction_factor: 只影响level-based压缩
+-	options.max_grandparent_overlap_factor: 只影响level-based压缩
+-	options.soft_rate_limit 与 options.hard_rate_limit: 已被丢弃
+-	options.hard_pending_compaction_bytes_limit: 只影响level-based压缩
+-	options.compaction_pri: 只在level-based支持
+
+# 估算写放大
+
+调优universal压缩的时候，估算写放大将非常有帮助。然而，这很难。由于universal压缩总是做局部最优选择，LSM树的结构非常难预计。你可以参考上面提到的例子。我们还没有一个好的数学模型来预计写放大。
+
+这里有一个不那么好的估计。
+
+这个估算基于一个简单的假设，每一次一个更新被压缩，输出文件都是原始文件的两倍（这是一个拍脑袋做出的假设），除了第一个或者最后一个压缩，这两种情况，相似大小的压缩在一起的排序结果。
+
+举个例子，如果options.compaction_options_universal.max_size_amplification_percent = 25，最后一个排序结果的大小为256GB，从memtable落盘的时候，SST文件的大小是256MB，options.level0_file_num_compaction_trigger = 11，然后在一个稳定的阶段，文件大小会这样：
+
+256MB
+256MB
+256MB
+256MB
+2GB
+4GB
+8GB
+16GB
+16GB
+16GB
+256GB
+
+压缩阶段，写放大就会这样：
+
+```
+256MB
+256MB
+256MB  (写放大 1)
+256MB
+--------
+2GB    (写放大 1)
+--------
+4GB    (写放大 1)
+--------
+8GB    (写放大 1)
+--------
+16GB
+16GB    (写放大 1)
+16GB
+--------
+256GB   (写放大 4)
+```
+
+所以总共的写放大大概就会是9。
+
+这里展示写放大如何被估算
+
+options.compaction_options_universal.max_size_amplification_percent总是自行引入一个小于100的写放大。写放大大概这么估算：
+
+WA1 = 100 / options.compaction_options_universal.max_size_amplification_percent
+
+如果他不低于100，假设
+
+WA1 = 0
+
+假设除了最后一个排序结果的总数据大小为S。如果options.compaction_options_universal.max_size_amplification_percent < 100，假设使用
+
+S = total_size * (options.compaction_options_universal.max_size_amplification_percent/100)
+
+或者
+
+S = total_size
+
+假设memtable落盘的SST文件大小为M。我们估计一次更新可以引起的最大数量的压缩为：
+
+p = log(2, S/M)
+
+我们推荐options.level0_file_num_compaction_trigger > p。然后我们估计因为个体大小比率导致的写放大：
+
+WA2 = p - log(2, options.level0_file_num_compaction_trigger - p)
+
+然后我们就有了总的写放大估算值 WA1 + WA2
+
 
