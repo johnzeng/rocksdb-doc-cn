@@ -43,6 +43,8 @@
     - [压缩/compaction](Compaction.md)
         - [leveled-compaction](Leveled-Compaction.md)
         - [universal-compaction](Universal-Compaction.md)
+        - [FIFO-compaction](FIFO-compaction-style.md)
+        - [手动压缩](Manual-Compaction.md)
 
 # TODO
 
