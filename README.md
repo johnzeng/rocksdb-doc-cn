@@ -46,6 +46,7 @@
         - [FIFO-compaction](FIFO-compaction-style.md)
         - [手动压缩](Manual-Compaction.md)
         - [子压缩](Sub-Compaction.md)
+    - [管理磁盘空间](Managing-Disk-Space-Utilization.md)
 
 # TODO
 
