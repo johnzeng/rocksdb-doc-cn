@@ -49,6 +49,8 @@
     - [管理磁盘空间](Managing-Disk-Space-Utilization.md)
     - SST文件格式
         - [基于块的表格式](Rocksdb-BlockBasedTable-Format.md)
+        - [平表](PlainTable-Format.md)
+        - [bloom过滤器](RocksDB-Bloom-Filter.md)
 
 # TODO
 
