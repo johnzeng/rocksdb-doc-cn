@@ -1,6 +1,6 @@
 一个快照会捕获在创建的时间点的DB的一致性视图。快照在DB重启之后将消失。
 
-#API 使用
+# API 使用
 
 - 通过GetSnapshot API创建一个快照
 - 通过设置ReadOptions::snapshot来读取快照的内容

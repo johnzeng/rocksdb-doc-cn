@@ -27,7 +27,7 @@ RocksDB增加了许多新功能，参考[features not in LevelDB](https://rocksd
 -[RocksDB项目历史](http://rocksdb.blogspot.com/2013/11/the-history-of-rocksdb.html)
 -[深入了解RocksDB](https://www.facebook.com/notes/facebook-engineering/under-the-hood-building-and-open-sourcing-rocksdb/10151822347683920)
 
-##链接
+## 链接
 - [样例程序](https://github.com/facebook/rocksdb/tree/master/examples)
 - [官方博客](http://rocksdb.org/blog/)
 - [stack overflow:rocksdb](https://stackoverflow.com/questions/tagged/rocksdb)

@@ -1,4 +1,4 @@
-#RocksDB选项文件
+# RocksDB选项文件
 
 从RocksDB4.3开始，我们加了一系列功能来简化RocksDB的设置。
 

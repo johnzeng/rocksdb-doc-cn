@@ -521,7 +521,7 @@ MergeOperator接口被设计用于支持抽象并暴露部分关键方法来在R
 
 我的用例是不是符合结合律？：如果你不确定是不是能满足“结合律”，你总是可以使用MergeOperator的。AssociativeMergeOperator是MergeOperator的直接子类，所以任何使用AssociativeMergeOperator可以解决的问题，在通用MergeOperator都可以解决。AssociativeMergeOperator只是为了提供便利性。
 
-##有用的链接
+## 有用的链接
 
 [合并+压缩实现细节](https://rocksdb.org.cn/doc/Merge-Operator-Implementation.html) 为那些希望了解合并操作符对他们的代码的影响的RocksDb工程师提供。
 

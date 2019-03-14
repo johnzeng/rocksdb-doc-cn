@@ -1,4 +1,4 @@
-#String选项以及Map选项
+# String选项以及Map选项
 
 用户通过Options类向RocksDB传递选项。除了通过使用Options类设置选项，还可以使用另外两(写作两，读作三)个方法设置：
 

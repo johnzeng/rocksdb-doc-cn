@@ -1,4 +1,4 @@
-#文件结构
+# 文件结构
 
 磁盘上的文件被分成多层进行组织。我们叫他们Level-1, Level-2，等等，或者简单的L1,L2，等等。一个特殊的层，Level-0(L0)，会包含刚从内存memtable落盘的数据。每个层（除了Level0）都是一个独立的排序结果
 
@@ -50,7 +50,7 @@
 
 ![https://github.com/facebook/rocksdb/raw/gh-pages-old/pictures/subcompaction.png](https://github.com/facebook/rocksdb/raw/gh-pages-old/pictures/subcompaction.png)
 
-#压缩文件选择
+# 压缩文件选择
 
 当多个层触发压缩条件，RocksDB需要选择哪个层先进行压缩。对每个层通过下面方式生成一个分数：
 

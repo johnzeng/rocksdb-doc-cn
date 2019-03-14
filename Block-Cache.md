@@ -25,7 +25,7 @@ table_options.block_cache_compressed = another_cache;
 table_options.no_block_cache = true;
 ```
 
-#LRU缓存
+# LRU缓存
 
 开箱即用的情况下，RocksDB会使用LRU块缓存实现，空间为8MB。每个缓存分片都维护自己的LRU列表以及自己的查找哈希表。通过每个分片持有一个互斥锁来实现并发。不管是查找还是插入，都需要申请该分片的互斥锁。用户可以通过调用NewLRUCache创建一个LRU缓存。函数提供了一些非常有用的选项来设置缓存：
 
@@ -34,7 +34,7 @@ table_options.no_block_cache = true;
 - strict_capacity_limit：在非常少有的情况下，缓存块大小会比他的容量大。比如说，正在进行的读取操作或者整个DB的迭代器遍历操作把块钉在了块缓存里，然后被固定的块的大小超过了容量。如果后面有读取操作，希望将数据插入到块缓存中，如果strict_capacity_limit=false（这是默认的），缓存会没法按照容量设置进行处理，只能同意插入。如果主机内存不够，这可能导致未预期的OOM错误导致DB崩溃。把这个选项设置为true会拒绝进一步的缓存插入，并且导致读或者迭代失败。这个选项是按照分片粒度来工作的，也就是说有可能一个分片满的时候拒绝插入，而其他分片还有未使用的空间。
 - high_pri_pool_ratio：保留给高优先级块的容量的百分比。参考[缓存索引与过滤块]()章节了解更多内容
 
-#Clock缓存
+# Clock缓存
 
 ClockCache实现了[CLOCK算法](https://en.wikipedia.org/wiki/Page_replacement_algorithm#Clock)。每个clock缓存分片都维护一个缓存项的环形列表。一个clock指针遍历这个环形列表来找一个没有固定的项进行驱逐，同时，如果在上一个扫描中他被使用过了，那么给予这个项两次机会来留在缓存里。tbb::concurrent_hash_map 被用来查找数据。
 
