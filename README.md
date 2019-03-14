@@ -51,9 +51,10 @@
         - [基于块的表格式](Rocksdb-BlockBasedTable-Format.md)
         - [平表](PlainTable-Format.md)
         - [bloom过滤器](RocksDB-Bloom-Filter.md)
-    - RocksJava
-        - [RocksJava基础](RocksJava-Basics.md)
-        - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
+        - [数据块哈希索引](Data-Block-Hash-Index.md)
+- RocksJava
+    - [RocksJava基础](RocksJava-Basics.md)
+    - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
 
 # TODO
 
