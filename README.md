@@ -52,6 +52,9 @@
         - [平表](PlainTable-Format.md)
         - [bloom过滤器](RocksDB-Bloom-Filter.md)
         - [数据块哈希索引](Data-Block-Hash-Index.md)
+    - 日志以及监控
+        - [日志](Logger.md)
+        - [统计](Statistics.md)
 - RocksJava
     - [RocksJava基础](RocksJava-Basics.md)
     - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
