@@ -2,6 +2,13 @@
 
 这个是rocksdb文档的中文翻译
 
+原文来自[rocksdb wiki](https://github.com/facebook/rocksdb/wiki)
+
+中文部分会更新到[rocksdb中文网/文档](https://rocksdb.org.cn/doc.html)
+
+本翻译没有经过任何校对，so，如果有疑惑，欢迎提issue。如果希望帮助/催更翻译一些没有的章节，同样欢迎提issue。如果你自己翻译好了，提PR什么的也不是不可以。
+
+目前翻译中的章节我会在下方的TODO更新。
 
 # 目录
 
@@ -65,7 +72,7 @@
 
 # TODO
 
-- 目前目录中还没翻译的内容
+- Implementation Details好评翻译中
 - 部分链接由于没有翻译，所以暂时没有编辑上去
 - 校对。。。
 
