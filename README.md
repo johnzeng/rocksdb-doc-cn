@@ -22,6 +22,8 @@
         - [生存时间(TTL)支持](Time-to-Live.md)
         - [事务](Transactions.md)
         - [快照](Snapshot.md)
+        - [范围删除](DeleteRange.md)
+        - [原子落盘](Atomic-flush.md)
 	- 选项
 		- [基础选项以及调优](Setup-Options-and-Basic-Tuning.md)
 		- [选项字符串以及选项Map](Option-String-and-Option-Map.md)
