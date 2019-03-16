@@ -66,6 +66,8 @@
         - [统计](Statistics.md)
         - [性能与IO上下文](Perf-Context-and-IO-Stats-Context.md)
         - [事件监听器](EventListener.md)
+- 工具/实用助手
+    - [checkpoint](Checkpoints.md)
 - RocksJava
     - [RocksJava基础](RocksJava-Basics.md)
     - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
