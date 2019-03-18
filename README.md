@@ -68,6 +68,8 @@
         - [事件监听器](EventListener.md)
 - 工具/实用助手
     - [checkpoint](Checkpoints.md)
+- 实现细节
+    - [删除过期文件](Delete-Stale-Files.md)
 - RocksJava
     - [RocksJava基础](RocksJava-Basics.md)
     - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
