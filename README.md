@@ -70,6 +70,7 @@
     - [checkpoint](Checkpoints.md)
 - 实现细节
     - [删除过期文件](Delete-Stale-Files.md)
+    - [分片索引-过滤器](Partitioned-Index-Filters.md)
 - RocksJava
     - [RocksJava基础](RocksJava-Basics.md)
     - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
