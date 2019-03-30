@@ -71,6 +71,7 @@
 - 实现细节
     - [删除过期文件](Delete-Stale-Files.md)
     - [分片索引-过滤器](Partitioned-Index-Filters.md)
+    - [写预备事务](WritePrepared-Transactions.md)
 - RocksJava
     - [RocksJava基础](RocksJava-Basics.md)
     - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
