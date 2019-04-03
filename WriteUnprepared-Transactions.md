@@ -75,7 +75,25 @@ Transaction对象会需要追踪已经写入到db的未预备事务的列表。�
 
 在WritePreparedTxn中，回滚实现被限制在只在恢复之后进行回滚。他大概是这样实现的：
 
-1.
+1. 对于已经写入的以准备数据，prep_seq = seq
+2. 对于每个修改的key，通过prep_seq-1读取原始的数值
+3. 回写原有的值，但是使用一个新的序列号，rollback_seq
+4. rollback_seq被加入到提交映射里
+5. prep_seq从PrepareHeap中移除
+
+这个实现在 存在线上快照能看到prep_seq的时候，是不能工作的。因为如果max_evicted_seq增加到prep_seq之上了，我们会有 `prep_seq < max_evicted_seq < snaphot_seq < rollback_seq`。这时候，正在序列号snapshot_seq上读取的快照会假设在prep_seq的数据已经被提交了，因为`prep_seq < max_evicted_seq`且在old_commit_map里面没有记录
+
+这个缺点在WritePreparedTxn中可以容忍，因为Mysql只会在恢复的时候回滚准备好的事务，此时不会有存活快照，因此不会有这个不一致问题。然而，在WriteUnpreparedTxn，这个场景不止发生在恢复阶段，同事会发生在用户发起的未预备事务的回滚上。
+
+我们通过写入一个回滚标记解决这个问题，在放弃的事务后追加回滚数据，然后在提交映射里提交事务。因为事务后面追加了回滚数据，尽管被提交了，但是他不会修改数据库的状态，因此他被有效地回滚了。如果max_evicted_seq增加到超过prep_seq了，由于<prep_seq, commit_seq>被加入到CommitCache，已有路径，比如，增加淘汰项到old_commit_map，会处理存活的，满足`prep_seq < snapshot_seq < commit_seq`的快照。如果他在回滚过程中崩溃，在恢复的时候，他读取回滚标记，然后完成回滚操作。
+
+如果DB在回滚中间泵快，恢复者会看到一些部分写入到WAL的回滚数据。因此恢复过程会最终重试完成回滚，这种部分数据会简单地 使用之前的数值，覆盖为新的回滚批处理。
+
+回滚批处理会被 一次性，或者 如果事务很大，分成多个子事务 写入。我们未来会探讨其他的可能实现。
+
+其他关于WriteUnpreparedTxn的回滚问题就是如何知道应该回滚哪些key了。之前，由于整个准备好的批处理缓存在了内存，因此可以值迭代写批处理来找到修改了的，需要回滚的key的集合。在这个工程，第一个迭代，我们仍旧保留把key集合写入内存的做法。在下一个迭代，如果key集合的大小增长到一个阈值，我们会从内存中清理这个key的集合，然后如果事务被丢弃了，就从WAL中读取key。每个事务已经在追踪一个列表的未预备序列号，这可以被用于查找WAL中正确的位置。
+
+## Get
 
 
 
