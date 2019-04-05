@@ -74,6 +74,7 @@
     - [写预备事务](WritePrepared-Transactions.md)
     - [写未预备事务](WriteUnprepared-Transactions.md)
     - [我们是如何维护存活文件的](How-we-keep-track-of-live-SST-files.md)
+    - [优化SST文件索引](Indexing-SST-Files-for-Better-Lookup-Performance.md)
 - RocksJava
     - [RocksJava基础](RocksJava-Basics.md)
     - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
