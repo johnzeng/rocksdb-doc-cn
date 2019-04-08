@@ -78,6 +78,8 @@
     - [我们是如何维护存活文件的](How-we-keep-track-of-live-SST-files.md)
     - [优化SST文件索引](Indexing-SST-Files-for-Better-Lookup-Performance.md)
     - [选择Level压缩的文件](Choose-Level-Compaction-Files.md)
+    - [RocksDB修复器](RocksDB-Repairer.md)
+    - [迭代器的实现](Iterator-Implementation.md)
 - RocksJava
     - [RocksJava基础](RocksJava-Basics.md)
     - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
