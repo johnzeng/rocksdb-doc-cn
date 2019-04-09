@@ -80,6 +80,7 @@
     - [选择Level压缩的文件](Choose-Level-Compaction-Files.md)
     - [RocksDB修复器](RocksDB-Repairer.md)
     - [迭代器的实现](Iterator-Implementation.md)
+    - [模拟内存](Simulation-Cache.md)
 - RocksJava
     - [RocksJava基础](RocksJava-Basics.md)
     - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
