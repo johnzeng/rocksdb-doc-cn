@@ -81,6 +81,7 @@
     - [RocksDB修复器](RocksDB-Repairer.md)
     - [迭代器的实现](Iterator-Implementation.md)
     - [模拟内存](Simulation-Cache.md)
+    - [持久化读缓存](Persistent-Read-Cache.md)
 - RocksJava
     - [RocksJava基础](RocksJava-Basics.md)
     - [RocksJava性能测试](RocksJava-Performance-on-Flash-Storage.md)
