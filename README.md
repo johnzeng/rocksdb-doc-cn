@@ -90,7 +90,7 @@
 
 # TODO
 
-- Implementation Details好评翻译中
+- Memory usage in RocksDB和Tuning Guide翻译中
 - 部分链接由于没有翻译，所以暂时没有编辑上去
 - 校对。。。
 
