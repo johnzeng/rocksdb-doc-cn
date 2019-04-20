@@ -87,6 +87,8 @@
 - RocksJava
     - [RocksJava基础](doc/RocksJava-Basics.md)
     - [RocksJava性能测试](doc/RocksJava-Performance-on-Flash-Storage.md)
+- 性能
+    - [RocksDB内存使用](doc/Memory-usage-in-RocksDB.md)
 
 # TODO
 
