@@ -89,6 +89,7 @@
     - [RocksJava性能测试](doc/RocksJava-Performance-on-Flash-Storage.md)
 - 性能
     - [RocksDB内存使用](doc/Memory-usage-in-RocksDB.md)
+    - [调优指南](doc/RocksDB-Tuning-Guide.md)
 
 # TODO
 

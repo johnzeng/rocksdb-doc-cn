@@ -113,5 +113,421 @@ Interval WAL: 3511027 writes, 1013611 syncs, 3.46 writes per sync, 8.59 MB writt
 
 ## 通用选项。
 
-**filter_policy**
+**filter_policy** —— 如果你需要做点查询你一定希望打开bloom过滤器。我们使用bloom过滤器来避免不必要的磁盘访问。你应该把filter_policy赋值给rocksdb::NewBloomFilterPolicy(bits_per_key)。默认bits_per_key 为10，带来袋盖1%的假阳性率。更大的bits_per_key会降低假阳性率，但是增加内存使用和空间放大。
+
+**block_cache** —— 我们通常推荐把这个设置赋值给rocksdb::NewLRUCache(cache_capacity, shard_bits)的结果。块缓存缓存了未压缩的块。另一方面，OS缓存，缓存了压缩了的块（因为他们是以这种方式存储在文件的）。因此，同时使用block_cache和OS缓存是合理的。我们需要对块缓存的访问上锁，并且有时候我们看到RockDB在块缓存互斥锁上有瓶颈，特别是当DB的大小小于RAM的时候。在这种情况，设置shard_bits为一个更大的数字，把块缓存分片就很合理了。如果shard_bits为4，分片数量为16。
+
+**allow_os_buffer** —— 如果为false，我们不会把文件缓存在OS的缓存。查看上面的注释。
+
+**max_open_files** —— RocksDB会保存所有文件描述符到一个表缓存。如果文件描述符的数量超过了max_open_files，一些文件会从表缓存中被淘汰，并且他们的文件描述符会被关闭。这意味着每个读取必须遍历表缓存以找到他需要的文件。设置max_open_files为-1以永远允许打开文件，可以避免昂贵的表缓存调用。
+
+**table_cache_numshardbits** —— 这个选项控制表缓存分片。如果表缓存互斥锁竞争激烈，增加这个。
+
+**block_size** —— RocksDB把用户数据打包到块里。当尝试从一个表文件一个键值对的时候，一个块项目会被载入内存。块大小默认为4KB。每个表文件包含一个索引，罗列了所有块的偏移。增加block_size意味着索引会包含更少的项（因为每个文件的块少了），因此索引会更小。增加block_size会减少内存使用，和空间放大，但是会带来读放大。
+
+# 缓存分片和线程池
+
+有时候你可能希望在一个进程里跑多个RocksDB实例。RocksDB提供一个方式让这些实例共享块缓存和线程池。为了共享块缓存，给所有实例赋值同一个缓存对象。
+
+```
+first_instance_options.block_cache = second_instance_options.block_cache = rocksdb::NewLRUCache(1GB)
+```
+
+这会是两个实例共享一个1GB的块缓存。
+
+线程池与Env对象结合。当你构造Options的时候，options.env被设置为Env::Default()，通常情况下这都是最好的。由于所有的Options使用同一个静态对象Env::Default()，线程池默认就是共享的。参考[并发选项](#并发选项)以了解如何设置线程池的线程数量。这样，你可以设置最大并行运行的压缩和落盘，即使运行多个RocksDB实例。
+
+# 落盘选项
+
+所有写入到RocksDB的都是先插入一个名为memtable的内存数据结构。一旦**活跃的memtable**满了，我们创建一个新的，然后标记旧的为只读。我们成只读的memtable为**不可修改**。在任何时候，都刚好只有一个活跃的memtable，然后又0个或者更多的不可修改memtable。不可修改memtable总是等待被落盘到存储。有三个选项控制落盘行为。
+
+**write_buffer_size** 设置一个单独memtable的大小。一旦memtable超过这个大小，他就会被标记为不可修改并且一个新的会被创建。
+
+**max_write_buffer_number**设置memtable的最大数量，活跃和不可修改加在一起。如果活跃memtable填满了，然后总memtable的数量大于max_write_buffer_number，我们会让后续的写入失速。在落盘进程慢于写入速度的时候，就会发生。
+
+**min_write_buffer_number_to_merge**是落盘前需要合并的memtable的最小数量。例如，如果选项设置为2，不可修改memtable只会在有两个的时候落盘 —— 一个单一的不可修改memtable绝对不会落盘。如果多个memtable被合并到一起，会有更少的数据被写入存储，因为两个更新被合并到一个单独的key。然而，每个Get()必须线性遍历所有不可修改的memtable已检查是否有key存在。把这个值设置的太高可能会伤害性能。
+
+例子：选项为：
+
+```
+write_buffer_size = 512MB;
+max_write_buffer_number = 5;
+min_write_buffer_number_to_merge = 2;
+```
+
+如果写入速率为16MB/s。在这个例子，一个新的memtable会每32秒创建一次，然后两个memtable会被合并到一起然后每64秒落盘一次。根据工作集合的大小，落盘大小会在512MB到1GB之间。为了防止落盘无法跟上写速度，memtable使用的内存大小被限制为 5*512MB = 2.5GB。当这个值达到了，后续写入会被拦截，知道落盘结束，并且memtable使用的内存被释放。
+
+# Level风格压缩
+
+在Level风格压缩，数据库文件按层组织。memtable被落盘到level 0的文件，那里包含了最新的数据。更高层包含更老的数据。level 0 的文件会有交叉，但是在level 1 和 更高的没有交叉。结果，Get通常需要检查level 0的每个文件，但是对于后续的层，不会超过一个文件包含这个key。每个层都10倍（这个因数是可配置的）大于之前一层。
+
+一次压缩可能携带一些在level N的文件，然后与level N+1的有交叉的文件进行压缩。两个在不同层的压缩操作或者不同key范围的操作可以相互独立进行或者并发进行。压缩速度直接与最大写速率成比例。如果压缩不能跟上写速率，数据库使用的空间会持续增长。以这种方式配置RocksDB使他能以高并发执行压缩，完全利用存储的性能**非常重要**。
+
+Level 0 和 1 的压缩有点取巧。level 0 的文件通常覆盖整个key空间。当压缩L0 -> L1（从level 0 到 level 1），压缩包含所有Level 1的文件。将所有L1的文件与L0压缩，则L1 -> L2的压缩无法同时进行；他必须等到L0 -> L1 的压缩结束。如果 L0 -> L1压缩很慢，他会变成系统内大部分时间里唯一运行的压缩，因为其他的压缩必须等待他完成。
+
+L0 -> L1 压缩同样是单线程的。很难在单线程压缩中得到一个好的吞吐。为了检查是不是这里出了问题，检查磁盘利用率。如果磁盘不是完全被利用起来，可能压缩配置有问题。我们通常推荐 通过**设置L0跟L1的大小差不多** 以达到 尽快完成L0 -> L1压缩的目的。
+
+一旦你决定了Level 1 的合适大小，你必须决定层乘数因子。假设你的level 1大小为512MB，层乘数因子为10，并且数据库的大小为500GB。Level 2 的大小就是5GB，level 3 51GB，level 4 512GB。因为你的数据库大小为500GB，level 5以及更高的层会是空的。
+
+空间放大很好计算。为(512 MB + 512 MB + 5GB + 51GB + 512GB) / (500GB) = 1.14。这里是我们如何计算写放大：每个字节先会写到Level 0。之后被压缩到Level 1.因为Level 1的大小跟Level 0 相同，从L0 -> L1压缩的写放大为 2。然而，当一个从Level 1 来的字节压缩到Level 2的时候，他与level 2的10个byte压缩（因为level 2 是10x倍大）。L2 -> L3和L3 -> L4也是一样。
+
+因此，总写放大接近 1 + 2 + 10 + 10 + 10 = 33。点查询必须查询level 0 的所有文件然后每一层最多查询一次。然而，bloom过滤器可以帮我们极大减少读放大。不过，短期存活的区间扫描会有点昂贵。Bloom过滤器在区间扫描的时候没什么用，所以读放大为number_of_level0_files + number_of_non_empty_levels。
+
+现在我们深入探讨控制level压缩的选项。我们会从更重要的开始。
+
+**level0_file_num_compaction_trigger** —— 一旦level 0 的文件数量达到这个值，L0->L1压缩就会触发。我们可以这样估算level 0在稳定状态的大小：write_buffer_size * min_write_buffer_number_to_merge * level0_file_num_compaction_trigger。
+
+**max_bytes_for_level_base**和**max_bytes_for_level_multiplier** —— max_bytes_for_level_base是一个Level 1的总大小。就如之前说的，我们推荐这个跟level 0的大小接近。每个后续层为max_bytes_for_level_multiplier倍于前一个。默认为10，我们不推荐修改他。
+
+**target_file_size_base** 和 **target_file_size_multiplier** —— 在level 1的文件大小为target_file_size_base字节。每下一层的文件大小会是target_file_size_multiplier倍大于前一层。然而，默认target_file_size_multiplier为1，所以每一层文件的大小都一样大，这通常是个好事。我们推荐设置target_file_size_base为max_bytes_for_level_base/10，这样我们在level 1就有10个文件。
+
+**compression_per_level** —— 使用这个选项来设置不同层的压缩风格。通常我们不压缩level 0 和level 1，值在更高的层压缩数据。你甚至可以再最高层设置最慢的压缩算法，在最底层设置更快的压缩算法（最高层为Lmax）。
+
+**num_levels** —— num_levels比预期的数据库的层数高是安全的。一些更高的层会是空的，但是这不会影响数据库的性能。只有当你希望你的层数大于7（默认值）的时候才修改这个选项。
+
+# Universal压缩
+
+level风格压缩在某些场景会有很高的写放大。对于写多的场景，你可能会因为磁盘推图而遇到瓶颈。为了优化这些场景，RocksDB引入了一个新的压缩风格，我们称之为Universal压缩，希望减少写放大。然而，这可能增加读放大，并且总是增加空间放大。**Universal压缩有大小限制。当你的DB（或者列族）大于100GB的时候，请注意**。参考[Universal压缩](Universal-Compaction.md)了解细节。
+
+使用universal压缩，一个压缩流程可能张女士增加2的空间放大。换句话说，如果你存储10GB的数据在数据库，压缩过程会消耗额外的10GB，还要加入额外的空间放大。
+
+然而，当有技术可以帮助我们减少临时的内存翻倍。如果你使用universal压缩，我们强烈你分片数据，并且放置在多个RocksDB实例。假设你有S个分片。然后配置Env线程池，只使用N个压缩线程。只有N个分片，S个线程会有额外的空间放大，因此得到N/S的额外放大，而不是1。例如，如果你的DB是10GB，并且你配置100个分片，每个分片会有100MB的数据。如果你配置你的线程池为20个并发压缩，你会只需要额外的2GB数据，而不是10GB。同事，压缩会并行执行，可以完全利用你的存储并发性能。
+
+**max_size_amplification_percent** —— 大小放大，定义为存储数据库一个byte数据额外需要的存储（百分比）。默认为200，意味着一个100byte的数据库可以获取300byte的存储空间。300byte中的200 byte只在压缩过程中暂时用到。增加这个限制减小写放大，但是（显然）增加空间放大。
+
+**compression_size_percent** —— 数据库中压缩的数据的比例。较老的数据会被压缩，更新的数据不会被压缩。如果设置为-1（默认），所有数据都会被压缩。减小compression_size_percent会减少CPU使用率，增加空间放大。
+
+参考[Universal压缩](Universal-Compaction.md)了解更多信息
+
+# 写失速
+
+参考[写失速](https://rocksdb.org.cn/doc/Write-Stalls.html)了解更多细节
+
+# 前缀数据库
+
+RocksDB保持所有排序号并且支持顺序迭代。然而，有些应用不需要key为完全排序。他们只关心一个固定前缀的key的排序。
+
+这些应用可以从prefix_extractor中得到好处。
+
+**prefix_extractor** —— 一个SliceTransform对象，定义key前缀。key前缀之后被用于实现一些有趣的优化：
+
+定义bloom过滤器，可以减少前缀区间查询的读放大（比如，给我所有以前缀XXX开头的key）。确保定义**Options::filter_policy**。
+
+使用基于哈希表的memtable以避免memtable里二分搜索的开销。
+
+给表文件增加哈希索引以避免表文件中二分搜索的开销。对于(2)和(3)的细节，参考[自定义memtable和表工厂](https://rocksdb.org.cn/doc/Basic-Operations.html#memtable-and-table-factories)。请注意，(1)通常已经降低足够的IO了。（2）和（3）可以在某些场景降低CPU开销，并且通常带来一些内存开销。你应该只在CPU为你的瓶颈，并且没有其他更简单的调优手段的时候尝试他们，毕竟这不是通用尝试。确保查看了include/rocksdb/options.h中的关于prefix_extractor的注释。
+
+# Bloom过滤器
+
+Bloom过滤器是基于可能性的数据结构，用于检测一个元素是不是存在于一个结合中。RocksDB中的Bloom过滤器通过一个名为*filter_polic*的选项控制。当一个用户调用Get(key)，会有一个文件列表，可能包含这个key。通常是Level 0的所有文件，以及大于0的每一层中的一个文件。然而，在我们读取每个文件前，我们先咨询bloom过滤器。Bloom过滤器会过滤掉大部分不包含该key的文件的读取。在大多数时候，Get通常只会做一次文件读取。Bloom过滤器总是保持在内存中，以方便打开文件，除非BlockBasedTableOptions::cache_index_and_filter_blocks为true。打开的文件的数量通过max_open_files选项控制。
+
+有两个bloom过滤器类型：基于块的，和全过滤。
+
+## 基于块的过滤器
+
+通过调用一下接口使用基于块的过滤器：
+
+```
+options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true))
+```
+
+基于块的bloom过滤器是根据每个块分别建立的。在一个读取中，我们先咨询一个索引，返回我们正在找的块。现在我们有一个块了，我们咨询bloom过滤器来过滤这个块。
+
+## 全过滤
+
+通过一下调用设置全过滤：
+
+```
+options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, false))
+```
+
+全过滤针对每个文件构建。每个文件只有一个bloom过滤器，这意味着我们可以先查询bloom过滤器，而不用查询索引。如果key不在bloom过滤器，相比基于块的过滤器，我们省略一个索引搜索。
+
+全过滤可以进一步分片 : [分片过滤](Partitioned-Index-Filters.md)
+
+# 自定义memtable和表格式
+
+高级用户可以配置自定义的memtable和表格式
+
+**memtable_factory** —— 定义memtable。这里是我们支持的memtable：
+
+- SkipList —— 默认的memtable
+- HashSkipList —— 只能与prefix_extractor工作。他把key放入基于key前缀的桶中。每个桶是一个skiplist。
+- HashLinkedList —— 只能与prefix_extractor工作。他把key放入基于key前缀的桶中。每个桶是一个linked list。
+
+**table_factory** —— 定义表格式。这里是我们支持的表格式：
+
+- 基于块 —— 这是默认的表。适合于磁盘和闪盘上排序好的数据。他根据块的大小分块定位和加载（参考block_size选项）。因此成为基于块。
+- 平表 —— 只能与prefix_extractor一起工作。适用于在内存中排序好的数据（在tmpfs文件系统）。可以按byte定位。
+
+# 内存使用
+
+为了了解rocksdb是如何使用内存的，参考另一个wiki页[内存使用](Memory-usage-in-RocksDB.md)
+
+# 机械硬盘的差异
+
+在机械硬盘上，内存/持久化存储速比率常会低很多。如果数据和RAM的比率如果比较大，那么你可以减少对性能要求很高的数据需要的内存，以保证重要的数据在RAM。建议：
+
+- 使用相对**更大的块大小**以减少索引块的大小。你应该使用至少64KB的块大小。你可以考虑256KB甚至512KB。使用大块带来的问题是RAM被块缓存浪费了。
+- 打开**BlockBasedTableOptions.cache_index_and_filter_blocks=true**因为通常你不能把所有索引和bloom过滤器放入内存。即使你可以，也可以为了安全起见，打开这个。
+- **打开options.optimize_filters_for_hits**以减少一些bloom过滤器块大小。
+- 小心确保你有足够的内存来保存所有的bloom过滤器。如果你不能，那么bloom过滤器可能会损害性能。
+- 尝试**尽量紧凑的key编码**。更短的key可以减小索引块大小。
+
+与闪存相比，机械硬盘通常提供更低的随机读吞吐。
+
+- 设置**options.skip_stats_update_on_db_open=true**以加快DB打开时间。
+- 这是一个有争议的建议：使用**基于level的压缩**，因为他对于减少磁盘读更友好
+- 如果你使用基于level的压缩，使用**options.level_compaction_dynamic_level_bytes=true**。
+- 如果服务器有多个硬盘，设置**options.max_file_opening_threads**为一个大于1的值。
+
+随机读和序列化读的吞吐量差在机械磁盘上会比较大。建议：
+
+- 为压缩的输入，打开RocksDB层的预读取：**options.compaction_readahead_size**和**options.new_table_reader_for_compaction_inputs=true**
+- 使用相对**大文件尺寸**，我们推荐至少256MB。
+- 使用相对大的块大小。
+
+机械磁盘通常比闪存大：
+
+- 为了避免过多的文件描述符，使用更大的文件。我们推荐文件大小至少256MB。
+- 如果你使用universal风格压缩，不要令单个DB大小太大，因为全压缩会花费大量时间，并且影响性能。你可以使用更多的DB实例，单个DB的大小应该小于500GB。
+
+# 示例配置
+
+在这一节，我们会展现一些我们在生产环境上的RocksDB配置。
+
+## 闪存上的前缀数据库
+
+这个服务使用RocksDB来实现前缀区间搜索和点查询。在闪存上运行。
+
+```
+ options.prefix_extractor.reset(new CustomPrefixExtractor());
+```
+
+由于服务不需要读完整的顺序迭代（参考[前缀数据库](#前缀数据库)），我们定义前缀提取器。
+
+```
+rocksdb::BlockBasedTableOptions table_options;
+ table_options.index_type = rocksdb::BlockBasedTableOptions::kHashSearch;
+ table_options.block_size = 4 * 1024;
+ options.table_factory.reset(NewBlockBasedTableFactory(table_options));
+```
+
+我们在表文件中使用一个哈希索引以加快前缀查找，但是这增加存储空间和内存使用。
+
+```
+ options.compression = rocksdb::kLZ4Compression;
+```
+
+LZ4压缩减少了CPU使用，但是增加存储空间。
+
+```
+ options.max_open_files = -1;
+```
+
+这个设定关闭在表缓存中搜索文件，因此加快所有查询。如果你的服务的打开文件数非常高，这总是一个好的设定。
+
+```
+ options.options.compaction_style = kCompactionStyleLevel;
+ options.level0_file_num_compaction_trigger = 10;
+ options.level0_slowdown_writes_trigger = 20;
+ options.level0_stop_writes_trigger = 40;
+ options.write_buffer_size = 64 * 1024 * 1024;
+ options.target_file_size_base = 64 * 1024 * 1024;
+ options.max_bytes_for_level_base = 512 * 1024 * 1024;
+```
+
+我们使用level风格的压缩。Memtable的大小为64MB并且周期性落盘到Level 0.压缩 L0 -> L1在Level 0 有 10个文件的时候触发（总共640MB）。当L0有640MB，压缩触发，压入L1，最大的大小是512MB，总DB大小？？？
+
+```
+ options.max_background_compactions = 1
+ options.max_background_flushes = 1
+```
+
+任何时候，只能有1个并发压缩和1个落盘线程在进行。然而，系统有多个分片，所以在不同分片会有多个压缩。否则，只有两个线程往存储写入数据，利用率很低。
+
+```
+ options.memtable_prefix_bloom_bits = 1024 * 1024 * 8;
+```
+
+使用memtable的bloom过滤器，一些memtable的访问可以避免。
+
+```
+options.block_cache = rocksdb::NewLRUCache(512 * 1024 * 1024, 8);
+```
+
+块缓存被配置为512MB。（这个在好几个分片共享？）
+
+## 全排序数据库，闪存。
+
+这个数据库同事执行Get和全排序迭代。分片？？？
+
+```
+options.env->SetBackgroundThreads(4);
+```
+
+我们先设置4个线程到线程池。
+
+```
+options.options.compaction_style = kCompactionStyleLevel;
+options.write_buffer_size = 67108864; // 64MB
+options.max_write_buffer_number = 3;
+options.target_file_size_base = 67108864; // 64MB
+options.max_background_compactions = 4;
+options.level0_file_num_compaction_trigger = 8;
+options.level0_slowdown_writes_trigger = 17;
+options.level0_stop_writes_trigger = 24;
+options.num_levels = 4;
+options.max_bytes_for_level_base = 536870912; // 512MB
+options.max_bytes_for_level_multiplier = 8;
+```
+
+我们使用level风格压缩，高并发。memtable大小为64MB，level0文件数量为8。这意味着压缩在L0的数据增长到512MB的时候触发。L1的大小为512MB，每个层8倍大于上一层，L2 4Gb，L3 32GB。
+
+## 机械硬盘上的数据库
+
+即将到来。。。
+
+## 完整功能的内存数据库
+
+在这个例子，数据库被挂载到了tmpfs文件系统。
+
+使用mmap读：
+
+```
+options.allow_mmap_reads = true;
+```
+
+禁止块缓存，打开bloom过滤器，减少重启的开销：
+
+```
+BlockBasedTableOptions table_options;
+table_options.filter_policy.reset(NewBloomFilterPolicy(10, true));
+table_options.no_block_cache = true;
+table_options.block_restart_interval = 4;
+options.table_factory.reset(NewBlockBasedTableFactory(table_options));
+```
+
+如果你希望优先考虑速度，你可以关闭压缩：
+
+```
+options.compression = rocksdb::CompressionType::kNoCompression;
+```
+
+否则，打开一个轻量压缩，LZ4或者Snappy。
+
+设置更激进的压缩方式，并且为落盘和压缩分配更多的线程。
+
+```
+options.level0_file_num_compaction_trigger = 1;
+options.max_background_flushes = 8;
+options.max_background_compactions = 8;
+options.max_subcompactions = 4;
+```
+
+保持所有文件打开：
+
+```
+options.max_open_files = -1;
+```
+
+当读取数据的时候，考虑设置ReadOptions.verify_checksums = false。
+
+## 内存前缀数据库
+
+在这个例子，数据库挂载在tmpfs文件系统。我们使用自定义的格式来加速，一些其他功能无法支持。我们只支持Get和前缀范围搜索。WAL日志被排序好并且存在硬盘，以避免消耗非用于查询的内存。不支持Prev。
+
+由于数据库是在内存，我们不关心写放大。我们更关心读放大和空间放大。这是一个有趣的例子，因为我们对压缩调优到极致，所以通常只有一个SST表存在于系统。因此我们减少了读和空间放大，而写放大很大。
+
+由于使用universal压缩，压缩期间，我们的硬盘空间会高效地翻倍。这对内存数据库非常危险。因此我们把数据分片城400个RocksDB实例。我们只允许两个并发压缩，所以只有两个分片会使存储翻倍。
+
+在这个例子，前缀哈希可以用于允许系统使用哈希索引，而不是二分搜索，同时，如果可能，迭代的时候打开bloom过滤器：
+
+```
+options.prefix_extractor.reset(new CustomPrefixExtractor());
+```
+
+使用为了低延迟构建的内存定位表格式，需要mmap模式打开：
+
+```
+options.table_factory = std::shared_ptr<rocksdb::TableFactory>(rocksdb::NewPlainTableFactory(0, 8, 0.85));
+options.allow_mmap_reads = true;
+options.allow_mmap_writes = false;
+```
+
+使用哈希链表memtable以使用memtable的哈希索引：
+
+```
+options.memtable_factory.reset(rocksdb::NewHashLinkListRepFactory(200000));
+```
+
+当从memtable读取数据的时候，为哈希表打开bloom过滤器以减少内存访问（通常意味着CPU缓存未命中），以防止key在memtable中不存在。
+
+```
+options.memtable_prefix_bloom_bits = 10000000;
+options.memtable_prefix_bloom_probes = 6;
+```
+
+对压缩调优，一个全量压缩会在有两个文件的时候马上开始。我们hack了universal压缩的参数：
+
+```
+options.compaction_style = kUniversalCompaction;
+options.compaction_options_universal.size_ratio = 10;
+options.compaction_options_universal.min_merge_width = 2;
+options.compaction_options_universal.max_size_amplification_percent = 1;
+options.level0_file_num_compaction_trigger = 1;
+options.level0_slowdown_writes_trigger = 8;
+options.level0_stop_writes_trigger = 16;
+```
+
+调优bloom过滤器以最小化内存访问：
+
+```
+options.bloom_locality = 1;
+```
+
+所有表的读者对象总是被缓存，避免读取的时候表缓存访问：
+
+```
+options.max_open_files = -1;
+```
+
+同一时间使用一个memtable。他的大小根据我们希望的压缩间隔来决定。我们调优压缩，所以每次落盘后，一个全量压缩都会触发，消耗CPU。memtable越大，压缩间隔会越大，同时，我们看到内存效率更低，更差的查询性能和重启时更长的恢复时间：
+
+```
+options.write_buffer_size = 32 << 20;
+options.max_write_buffer_number = 2;
+options.min_write_buffer_number_to_merge = 1;
+```
+
+多个DB实例共享两个压缩线程：
+
+```
+options.max_background_compactions = 1;
+options.max_background_flushes = 1;
+options.env->SetBackgroundThreads(1, rocksdb::Env::Priority::HIGH);
+options.env->SetBackgroundThreads(2, rocksdb::Env::Priority::LOW);
+```
+
+设置WAL：
+
+```
+options.bytes_per_sync = 2 << 20;
+```
+
+## 对于内存块表的建议
+
+**hash_index**：在新的版本，哈希索引对基于块的表打开。他会使用5%的额外存储空间，但是随机读取比普通二分搜索快50%。
+
+table_options.index_type = rocksdb::BlockBasedTableOptions::kHashSearch;
+
+
+**block_size**：默认，这个值为4K。如果压缩被打开，一个更小的块大小会导致更高的随机度速度，因为解压缩的开销减小了。但是块大小不能太小，否则压缩就不起作用了。推荐设置到1k。
+
+**verify_checksum**：由于我们在tmpfs上排序好，并且关心读性能，校验和会被关闭。
+
+# 最后的考虑
+
+很不幸，最优化配置RocksDB不可忽略。即使是我们作为RocksDB开发者也不能完全明白每种配置的作用。如果你希望完全针对你的工作环境优化RocksDB，我们推荐实验和压力测试，同事注意三个放大因子。同事，请不要犹豫到[RocksDB开发者讨论组](https://www.facebook.com/groups/rocksdb.dev/)寻找我们的帮助。
+
 
