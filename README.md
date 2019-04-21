@@ -2,7 +2,7 @@
 
 这个是rocksdb文档的中文翻译
 
-**严重推荐先阅读FAQ，解决大部分问题**
+**严重推荐先阅读[FAQ](doc/RocksDB-FAQ.md)，能解决大部分问题**
 
 原文来自[rocksdb wiki](https://github.com/facebook/rocksdb/wiki)
 
@@ -10,12 +10,12 @@
 
 本翻译没有经过任何校对，so，如果有疑惑，欢迎提issue。如果希望帮助/催更翻译一些没有的章节，同样欢迎提issue。如果你自己翻译好了，提PR什么的也不是不可以。
 
-目前翻译中的章节我会在下方的TODO更新。
+目前我觉得比较有意思的内容已经翻一下来了，其他内容短时间内不会更新，如果希望看某一个篇章的翻译，请提issue。
 
 # 目录
 
 - [概述](doc/OverView.md)
-- [FAQ](doc/RocksDBFAQ.md)
+- [FAQ](doc/RocksDB-FAQ.md)
 - [术语](doc/Terminology.md) 
 - 开发者指南
 	- [基本操作](doc/Basic-Operations.md)
@@ -94,7 +94,6 @@
 
 # TODO
 
-- Memory usage in RocksDB和Tuning Guide翻译中
 - 部分链接由于没有翻译，所以暂时没有编辑上去
 - 校对。。。
 
