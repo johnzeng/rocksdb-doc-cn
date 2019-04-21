@@ -27,7 +27,7 @@
         - [列族](doc/Column-Families.md)
         - [创建以及导入SST文件](doc/Creating-and-Ingesting-SST-files.md)
         - [单删除](doc/Single-Delete.md)
-        - [低优先级写入](doc/low-priority-write.md)
+        - [低优先级写入](doc/Low-Priority-Write.md)
         - [生存时间(doc/TTL)支持](Time-to-Live.md)
         - [事务](doc/Transactions.md)
         - [快照](doc/Snapshot.md)
@@ -90,6 +90,7 @@
 - 性能
     - [RocksDB内存使用](doc/Memory-usage-in-RocksDB.md)
     - [调优指南](doc/RocksDB-Tuning-Guide.md)
+    - [写失速](doc/Write-Stalls.md)
 
 # TODO
 
