@@ -70,6 +70,7 @@
         - [事件监听器](doc/EventListener.md)
 - 工具/实用助手
     - [checkpoint](doc/Checkpoints.md)
+    - [如何备份RocksDB](doc/How-to-backup-RocksDB?.md)
 - 实现细节
     - [删除过期文件](doc/Delete-Stale-Files.md)
     - [分片索引-过滤器](doc/Partitioned-Index-Filters.md)
