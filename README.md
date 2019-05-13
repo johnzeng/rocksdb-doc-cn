@@ -92,6 +92,7 @@
     - [RocksDB内存使用](doc/Memory-usage-in-RocksDB.md)
     - [调优指南](doc/RocksDB-Tuning-Guide.md)
     - [写失速](doc/Write-Stalls.md)
+    - [使用RocksDB实现队列服务](doc/Implement-Queue-Service-Using-RocksDB.md)
 
 # TODO
 
