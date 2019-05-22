@@ -42,7 +42,7 @@
 
 **问:我可以保存一个snapshot，然后回滚rocksDB到这个状态吗？**
 
-答：可以，请使用BackUpEngine或则Checkpoints接口
+答：可以，请使用[BackupEngine](How-to-backup-RocksDB%3F.md)或者[Checkpoints](Checkpoints.md)接口
 
 **问:如何快速将数据载入rocksdb**
 
@@ -56,7 +56,7 @@
 	
 3-5条可以通过调用Options::PrepareForBulkLoad()一次完成。
 
-如果你可以离线处理数据，有一个更加快的方法：你可以对数据进行排序，并行生成没有交集的SST文件，然后批量加载这些SST文件接口。参考 [创建以及导入SST文件]()
+如果你可以离线处理数据，有一个更加快的方法：你可以对数据进行排序，并行生成没有交集的SST文件，然后批量加载这些SST文件接口。参考 [创建以及导入SST文件](Creating-and-Ingesting-SST-files.md)
 
 **问: RocksJava已经支持全部功能了嘛？**
 
@@ -64,7 +64,7 @@
 
 **问:谁在用RocksDB**
 
-答：参考 [Users]()
+答：参考 [Users](https://github.com/facebook/rocksdb/blob/master/USERS.md)
 
 **问:如何正确删除一个DB？我可以直接对活动的DB调用DestoryDB吗？**
 
@@ -84,7 +84,7 @@
 
 **问:有什么更好的办法把map-reduce生成的数据导入到rocksDB吗？**
 
-答：使用SstFileWriter，它可以让你直接创建RocksDB的SST文件，然后直接把他们加入到数据库。然而，如果你把SST文件加入到已有的RocksDB数据库，那么这些键不能跟已有的键值有交集。参看 [创建以及导入SST文件]()
+答：使用SstFileWriter，它可以让你直接创建RocksDB的SST文件，然后直接把他们加入到数据库。然而，如果你把SST文件加入到已有的RocksDB数据库，那么这些键不能跟已有的键值有交集。参看 [创建以及导入SST文件](Creating-and-Ingesting-SST-files.md)
 
 **问:对不同的列族配置不同的前缀提取器安全吗？**
 
@@ -120,7 +120,7 @@
 
 **问:生成snapshot 的时候，RocksDB会保留SST文件以及memtable吗？**
 
-答：不悔，参考 [snapshot 的工作原理]()
+答：不会，参考 [snapshot工作原理](OverView.md#getiterators以及snapshots)
 
 **问:如果设置了DBWithTTL，过期的key被删除的时间有保证吗？**
 
@@ -140,7 +140,7 @@
 
 **问:RocksDB的最新版本是哪个？**
 
-答：所有在[releases](https://github.com/facebook/rocksdb/releases)的都是稳定版本。对于RocksJava，稳定版本发布在 [这里](https://oss.sonatype.org/#nexus-search;quick~rocksdb)
+答：所有在[releases](https://github.com/facebook/rocksdb/releases)的都是稳定版本。对于RocksJava，稳定版本发布在 [(https://oss.sonatype.org/#nexus-search;quick~rocksdb](https://oss.sonatype.org/#nexus-search;quick~rocksdb)
 
 **问:block_size是压缩前的大小，还是压缩后的？**
 
@@ -153,7 +153,7 @@
 **问:一个迭代器需要持有多少资源，这些资源会在什么时候被释放？**
 
 答：迭代器需要持有数据块以及内存的memtable。每个迭代器需要持有以下资源：
-- 当前的迭代器所指向的所有数据块。参考 [迭代器固定的数据块]()
+- 当前的迭代器所指向的所有数据块。参考 [迭代器固定的数据块](Memory-usage-in-RocksDB.md#迭代器固定的块)
 - 迭代器创建的时候存在的memtable，即使这些memtable被刷到磁盘，也需要持有
 - 所有在迭代器创建的时候，硬盘上的SST文件。即使这些SST文件被压缩了，也需要持有
 这些资源会在迭代器删除的时候被释放
@@ -198,7 +198,7 @@
 
 **问:如何正确删除一个范围的key？**
 
-答：参考 [这里]()
+答：参考 [这里](https://github.com/facebook/rocksdb/wiki/Delete-A-Range-Of-Keys)
 
 **问:列族是用来干嘛的？**
 
@@ -214,7 +214,7 @@
 
 **问:RocsDB有列吗？如果没有，那为什么有列族呢？**
 
-答：没有，RocksDB没有列。参考 [这里]()了解什么是列族
+答：没有，RocksDB没有列。参考 [Column Families](Column-Families.md)了解什么是列族
 
 **问:RocksDB真的在读的时候无锁吗？**
 
@@ -238,13 +238,13 @@
 
 **问:如何估算一次强制全压缩会归还的空间？**
 
-答：目前没有一个简单的方法估算到精确值，特别是如果你用了压缩过滤器的时候。如果数据库的大小比较稳定，读去DB属性rocksdb.estimate-live-data-size应该是最好的估算。
+答：目前没有一个简单的方法估算到精确值，特别是如果你用了压缩过滤器的时候。如果数据库的大小比较稳定，读取DB属性rocksdb.estimate-live-data-size应该是最好的估算。
 
 **问:snapshot，checkpoint和backup有什么区别**
 
 答：snapshot是一个逻辑概念，用户可以通过API查询数据，但是底层的压缩还是会覆盖存在的文件。
-checkpoint会用同一个Env为所有数据库文件创建一个物理景象。如果操作系统允许使用硬链接创建镜像文件，那么这个操作就比较轻量。
-backup可以把物理的数据库文件移动到其他环境（如HDFS）。backup引擎还提供用语支持两个备份间的增量复制的API。
+checkpoint会用同一个Env为所有数据库文件创建一个物理镜像。如果操作系统允许使用硬链接创建镜像文件，那么这个操作就比较轻量。
+backup可以把物理的数据库文件移动到其他环境（如HDFS）。backup引擎还支持不同备份之间的增量复制。
 
 **问:我应该用哪种压缩风格呢？**
 
@@ -268,7 +268,7 @@ backup可以把物理的数据库文件移动到其他环境（如HDFS）。back
 
 **问:我观察到写IO有尖峰。我应该如何消除它们？**
 
-答：尝试使用限速器：[这里]()
+答：尝试使用限速器：[https://github.com/facebook/rocksdb/blob/v4.9/include/rocksdb/options.h#L875-L879](https://github.com/facebook/rocksdb/blob/v4.9/include/rocksdb/options.h#L875-L879)
 
 **问:不重新打开rocksdb，我能修改压缩过滤器吗？**
 
@@ -290,7 +290,7 @@ backup可以把物理的数据库文件移动到其他环境（如HDFS）。back
 
 **问:我什么时候应该使用RocksDB repair工具？有什么最佳实践吗？**
 
-答：参考 [这里]()
+答：参考 [RocksDB Repairer](RocksDB-Repairer.md)
 
 **问:如果我想取10个key出来，是调用MultiGet好还是调用10次Get好？**
 
@@ -304,9 +304,9 @@ backup可以把物理的数据库文件移动到其他环境（如HDFS）。back
 
 答：8MB。
 
-**问:如果我有好几个列族然后在调用DB函数的时候不穿列族指针，会发生什么？**
+**问:如果我有好几个列族然后在调用DB函数的时候不传列族指针，会发生什么？**
 
-答：会操作默认列族。
+答：只会操作默认列族。
 
 **问:由于磁盘空间不足，DB操作失败了，我要如何把自己解锁呢？**
 
@@ -318,7 +318,7 @@ backup可以把物理的数据库文件移动到其他环境（如HDFS）。back
 
 **问:我可以复用DBOptions或者ColumnFamilyOptions来打开多个DB或者列族吗？**
 
-答：可以。内部实现上，RocksDB总是会拷贝一次这些选项，所以你可以所以修改，复用它们。
+答：可以。内部实现上，RocksDB总是会拷贝一次这些选项，所以你可以修改，复用它们。
 
 **问:RocksDB支持群提交吗？**
 
