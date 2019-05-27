@@ -27,7 +27,7 @@ db->Put(WriteOptions(), handles[0], Slice("key4"), Slice("value4"));
 
 这是，WAL需要记录所有的写操作。WAL会保持打开，并不断跟踪后续的写操作，直到他的大小到达`DBOptions::max_total_wal_size`
 
-如果用户决定吧列族"new_cf"的数据落盘，一下的事情会发生
+如果用户决定把列族"new_cf"的数据落盘，以下的事情会发生
 
 1. new_cf的数据(key1和key3)会被落盘到一个新的SST文件
 2. 一个新的WAL会被创建，现在后续的写操作都会写到新的WAL了
@@ -40,14 +40,14 @@ db->Put(WriteOptions(), handles[1], Slice("key5"), Slice("value5"));
 db->Put(WriteOptions(), handles[0], Slice("key6"), Slice("value6"));
 ```
 
-这是，会有两个WAL文件，老的保存有从key1到key4的内容，新的保存key5和key6.因为老的还有线上数据，就是"defalut"列族的，他还不能被删除。只有当用户最后决定把"default"列族的数据落盘，老的WAL才能被归档，然后自动从磁盘上删除。
+这时，会有两个WAL文件，老的保存有从key1到key4的内容，新的保存key5和key6.因为老的还有线上数据，就是"defalut"列族的，他还不能被删除。只有当用户最后决定把"default"列族的数据落盘，老的WAL才能被归档，然后自动从磁盘上删除。
 
 ```cpp
 db->Flush(FlushOptions(), handles[0]);
 // 老的WAL文件会一步步地被归档，然后删除。
 ```
 
-总的来说一个WAL文件会在一下时机被创建
+总的来说一个WAL文件会在以下时机被创建
 
 1. DB打开的时候
 2. 一个列族落盘数据的时候
@@ -73,7 +73,7 @@ DBOptions::wal_dir用于设置RocksDB存储WAL文件的目录，这允许用户�
 
 ## DBOptions::avoid_flush_during_recovery
 
-选项名已经说明了他的用途（回复过程中避免落盘）
+选项名已经说明了他的用途（恢复过程中避免落盘）
 
 ## DBOptions::manual_wal_flush
 
@@ -81,7 +81,7 @@ DBOptions::manual_wal_flush决定WAL是每次写操作之后自动flush还是纯
 
 ## DBOptions::wal_filter
 
-通过DBOptions::wal_filter，用户可以提供一个在回复过程中处理WAL文件时被调用的filter对象。注意：ROCKSDB_LITE模式不支持该选项。
+通过DBOptions::wal_filter，用户可以提供一个在恢复过程中处理WAL文件时被调用的filter对象。注意：ROCKSDB_LITE模式不支持该选项。
 
 ## WriteOptions::disableWAL
 
