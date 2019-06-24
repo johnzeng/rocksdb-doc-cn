@@ -1,4 +1,4 @@
-在四月14日，我们开始为RocksDB构建一个[Java拓展](RocksJava-Basics.md)。这一页展示RocksJava在Flash存储上的性能测试结果。C++的性能测试结果可以在[这里]()找到
+在14年4月，我们开始为RocksDB构建一个[Java拓展](RocksJava-Basics.md)。这一页展示RocksJava在Flash存储上的性能测试结果。C++的性能测试结果可以在[这里]()找到
 
 # 设置
 
