@@ -8,7 +8,7 @@
 
 ![level_files](https://github.com/facebook/rocksdb/raw/gh-pages-old/pictures/level_files.png)
 
-每一层都是一个排序结果，因为每个SST文件中的key都是排好序的（参考[基于块的表格式]())。如果需要定位一个key，我们先二分查找所有文件的起始和结束key，定位哪个文件有这个key，然后二分查找具体的文件，来定为key的位置。总的来说，就是在该层的所有key里面进行二分查找。
+每一层都是一个排序结果，因为每个SST文件中的key都是排好序的（参考[基于块的表格式]())。如果需要定位一个key，我们先二分查找所有文件的起始和结束key，定位哪个文件有这个key，然后二分查找具体的文件，来定位key的位置。总的来说，就是在该层的所有key里面进行二分查找。
 
 所有非0层都有目标大小。压缩的目标是限制这些层的数据大小。大小目标通常是指数增加。
 
@@ -16,7 +16,7 @@
 
 # 压缩(compaction)
 
-当L0的文件数量到达level0_file_num_compaction_trigger，压缩就(compaction)会被触发，L0的文件会被合并进L1。通常我们需要把所有L0的文件都选上，因为他们通常会有交集：
+当L0的文件数量到达level0_file_num_compaction_trigger，压缩(compaction)就会被触发，L0的文件会被合并进L1。通常我们需要把所有L0的文件都选上，因为他们通常会有交集：
 
 ![pre_l0_compaction](https://github.com/facebook/rocksdb/raw/gh-pages-old/pictures/pre_l0_compaction.png)
 
@@ -59,19 +59,19 @@
 
 我们比较每一层的分数，分数高的压缩优先级更高。
 
-具体那个一个文件会被压缩会在[选择层压缩文件]()中解释。
+具体那个一个文件会被压缩会在[选择层压缩文件](Choose-Level-Compaction-Files.md)中解释。
 
 # 层的目标大小
 
 ## level_compaction_dynamic_level_bytes为false
 
-如果level_compaction_dynamic_level_bytes为false，那么层目标这样决定： L1的目标是max_bytes_for_level_base，然后Target_Size(Ln+1) = Target_Size(Ln) * max_bytes_for_level_multiplier * max_bytes_for_level_multiplier_additional[n]。max_bytes_for_level_multiplier_additional默认全为1。
+如果level_compaction_dynamic_level_bytes为false，那么层目标这样决定： L1的目标是max_bytes_for_level_base，然后 `Target_Size(Ln+1) = Target_Size(Ln) * max_bytes_for_level_multiplier * max_bytes_for_level_multiplier_additional[n]`。max_bytes_for_level_multiplier_additional默认全为1。
 
 举个例子，如果max_bytes_for_level_base = 16384，max_bytes_for_level_multiplier = 10 ，max_bytes_for_level_multiplier_additional没有被设置，那么L1,L2,L3与L4层的大小分别是16384, 163840, 1638400, 以及 16384000。
 
 ## level_compaction_dynamic_level_bytes为true
 
-最后一层的目标大小(层数-1)总是层的实际大小。剩下的Target_Size(Ln-1) = Target_Size(Ln) / max_bytes_for_level_multiplier。如果那一层的大小会小于max_bytes_for_level_base / max_bytes_for_level_multiplier，我们不会填充他。这些层会保持为空，所有L0的压缩会跳过这些层，直接到第一个符合大小的层。
+最后一层的目标大小(层数-1)总是层的实际大小。剩下的`Target_Size(Ln-1) = Target_Size(Ln) / max_bytes_for_level_multiplier`。如果哪一层的大小小于 `max_bytes_for_level_base / max_bytes_for_level_multiplier`，我们不会填充他。这些层会保持为空，所有L0的压缩会跳过这些层，直接到第一个符合大小的层。
 
 举个例子，如果max_bytes_for_level_base为1GB，num_levels=6，最后一层的实际大小为276GB，那么L1-L6层的目标大小经分别为0，0，0.276GB,2.76GB,27.6GB以及276GB。
 
@@ -83,7 +83,6 @@
 
 # TTL
 
-如果没有人更新一个文件中key，那么这个文件讲不会进入压缩流程，而这个文件就会存活很久。例如，在某些特定场景，key会被“软删除” —— 把数值设置为空而不是直接使用Delete删除。这个“已经删除”的key范围可能不会有任何新的写入了，这样，这个数据就会在LSM里面待很长时间，浪费空间。
+如果没有人更新一个文件中key，那么这个文件将不会进入压缩流程，而这个文件就会存活很久。例如，在某些特定场景，key会被“软删除” —— 把数值设置为空而不是直接使用Delete删除。这个“已经删除”的key范围可能不会有任何新的写入了，这样，这个数据就会在LSM里面待很长时间，浪费空间。
 
-一个动态ttl列族选项被用于解决这个问题。文件（或者说，数据）老于TTL的数据在没有其他后台任务的时候会被定时压缩。这回让数据进入常规的压缩流程，摆脱无用的老数据。对于所有不是最底层的，比ttl要新的数据，以及所有在最底层老于ttl的数据，这还有一个（好的）副作用。注意这会导致更多的写因为RocksDB会调度更多的压缩。
-
+一个动态ttl列族选项被用于解决这个问题。文件（或者说，数据）老于TTL的数据在没有其他后台任务的时候会被定时压缩。这会让数据进入常规的压缩流程，摆脱无用的老数据。对于所有不是最底层的，比ttl要新的数据，以及所有在最底层老于ttl的数据，这还有一个（好的）副作用。注意这会导致更多的写因为RocksDB会调度更多的压缩。
