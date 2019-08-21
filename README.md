@@ -23,7 +23,7 @@
 		- [前缀搜索](doc/Prefix-seek.md)
 		- [向前搜索](doc/SeekForPrev.md)
 		- [尾部迭代器](doc/Tailing-Iterator.md)
-		- [读-修改-写操作符](doc/Merge-operator.md)
+		- [读-修改-写操作符](doc/Merge-Operator.md)
         - [列族](doc/Column-Families.md)
         - [创建以及导入SST文件](doc/Creating-and-Ingesting-SST-files.md)
         - [单删除](doc/Single-Delete.md)
