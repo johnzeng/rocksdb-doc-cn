@@ -4,9 +4,8 @@ RocksDB迭代器允许用户以一个排序好的顺序向后或者向前遍历d
 
 
 
-![迭代器架构](https://camo.githubusercontent.com/ac5414e756848f55c359b131ae1c9809ec0c3cb9/68747470733a2f2f73392e706f7374696d672e6f72672f683863396a7a307a7a2f53637265656e5f53686f745f323031365f30385f30395f61745f355f32315f34375f504d2e706e67)
+![迭代器架构](../img/iterator-struct.png)
 
-[更高解析度的图片](https://s9.postimg.org/h8c9jz0zz/Screen_Shot_2016_08_09_at_5_21_47_PM.png)
 
 # DBIter
 
