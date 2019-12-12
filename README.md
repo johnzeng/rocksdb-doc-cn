@@ -28,7 +28,7 @@
         - [创建以及导入SST文件](doc/Creating-and-Ingesting-SST-files.md)
         - [单删除](doc/Single-Delete.md)
         - [低优先级写入](doc/Low-Priority-Write.md)
-        - [生存时间(doc/TTL)支持](Time-to-Live.md)
+        - [生存时间(TTL)支持](doc/Time-to-Live.md)
         - [事务](doc/Transactions.md)
         - [快照](doc/Snapshot.md)
         - [范围删除](doc/DeleteRange.md)
