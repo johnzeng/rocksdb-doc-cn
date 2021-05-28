@@ -19,7 +19,7 @@
 - [术语](doc/Terminology.md) 
 - 开发者指南
 	- [基本操作](doc/Basic-Operations.md)
-		- [迭代器](doc/iterator.md)
+		- [迭代器](doc/Iterator.md)
 		- [前缀搜索](doc/Prefix-seek.md)
 		- [向前搜索](doc/SeekForPrev.md)
 		- [尾部迭代器](doc/Tailing-Iterator.md)
@@ -37,7 +37,7 @@
 		- [基础选项以及调优](doc/Setup-Options-and-Basic-Tuning.md)
 		- [选项字符串以及选项Map](doc/Option-String-and-Option-Map.md)
 		- [配置文件](doc/RocksDB-Options-File.md)
-    - [压缩/compression](doc/compression.md)
+    - [压缩/compression](doc/Compression.md)
         - [字典压缩](doc/Dictionary-Compression.md)
     - [IO](doc/IO.md)
         - [限流器](doc/Rate-Limiter.md)
