@@ -8,7 +8,7 @@ RocksDB依靠大量灵活的配置，使之能针对不同的生产环境进行�
 ## 功能
 - 为需要存储TB级别数据到本地FLASH或者RAM的应用服务器设计
 - 针对存储在高速设备的中小键值进行优化——你可以存储在flash或者直接存储在内存
-- 性能碎CPU数量线性提升，对多核系统友好
+- 性能随CPU数量线性提升，对多核系统友好
 
 ## LevelDB所没有的功能
 RocksDB增加了许多新功能，参考[features not in LevelDB](https://rocksdb.org.cn/doc/Features-Not-in-LevelDB.html)
