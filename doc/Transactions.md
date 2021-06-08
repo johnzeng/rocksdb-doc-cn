@@ -104,7 +104,7 @@ s = txn->Commit();
 
 # 可重复读
 
-于普通的RocksDB读相似，有可以在ReadOptions指定一个Snapshot来保证事务中的读是可重复读。
+与普通的RocksDB读相似，有可以在ReadOptions指定一个Snapshot来保证事务中的读是可重复读。
 
 ```cpp
 read_options.snapshot = db->GetSnapshot();
