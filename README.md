@@ -57,6 +57,7 @@
         - [FIFO-compaction](doc/FIFO-compaction-style.md)
         - [手动压缩](doc/Manual-Compaction.md)
         - [子压缩](doc/Sub-Compaction.md)
+        - [选择Level压缩的文件](doc/Choose-Level-Compaction-Files.md)
     - [管理磁盘空间](doc/Managing-Disk-Space-Utilization.md)
     - SST文件格式
         - [基于块的表格式](doc/Rocksdb-BlockBasedTable-Format.md)
@@ -79,7 +80,6 @@
     - [我们是如何维护存活SST文件的](doc/How-we-keep-track-of-live-SST-files.md)
     - [优化SST文件索引以获得更好的搜索性能](doc/Indexing-SST-Files-for-Better-Lookup-Performance.md)
     - [合并运算实现](doc/Merge-Operator-Implementation.md)
-    - [选择Level压缩的文件](doc/Choose-Level-Compaction-Files.md)
     - [RocksDB修复器](doc/RocksDB-Repairer.md)
     - [两步提交实现](doc/Two-Phase-Commit-Implementation.md)
     - [迭代器的实现](doc/Iterator-Implementation.md)
