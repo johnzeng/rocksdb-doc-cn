@@ -54,7 +54,7 @@ return 0;
 
 ## 导入SST文件
 
-导入SST文件非常简单，你所需要做的只是调用DB::IngestExternalFile()然后吧文件地址以std::string的vector传入就行了
+导入SST文件非常简单，你所需要做的只是调用DB::IngestExternalFile()然后把文件地址以std::string的vector传入就行了
 
 ```cpp
 IngestExternalFileOptions ifo;
@@ -86,7 +86,7 @@ if (!s.ok()) {
 
 ### 全局序列号
 
-通过SstFileWriter创建的文件的元信息块里有一个特别的名为全局序号的字段，当这个字段第一次被使用，这个文件里的所有key都认为自己拥有这个序列号。当我们导入一个文件，我们给文件里的所有key都分配一个序列号。RocksDB5.16之前，RocksDB总是用一个随机写来更新这个元数据块里的全局序列号字段。从RocksDB5.16之后，RocksDB允许用户选择是否通过IngestExternalFileOptions::write_global_seqno更新这个字段。如果这个字段在导入的过程中没有被更新，那么RocksDB在读取文件的时候使用MANIFEST的信息以及表属性来推断全局序列号。如果底层的文件系统不支持随机写，这个路径就非常有效了。考虑到向后兼容，可以把这个选项设置为true，这样RocksDB 5.16或者更新的版本生成的SST文件就可被5.15或者更旧的Rocksdb也可以打开这个文件了。
+通过SstFileWriter创建的文件的元信息块里有一个特别的名为全局序号的字段，当这个字段第一次被使用，这个文件里的所有key都认为自己拥有这个序列号。当我们导入一个文件，我们给文件里的所有key都分配一个序列号。RocksDB 5.16之前，RocksDB总是用一个随机写来更新这个元数据块里的全局序列号字段。从RocksDB 5.16之后，RocksDB允许用户选择是否通过IngestExternalFileOptions::write_global_seqno更新这个字段。如果这个字段在导入的过程中没有被更新，那么RocksDB在读取文件的时候使用MANIFEST的信息以及表属性来推断全局序列号。如果底层的文件系统不支持随机写，这个路径就非常有效了。考虑到向后兼容，可以把这个选项设置为true，这样RocksDB 5.16或者更新的版本生成的SST文件就可被5.15或者更旧的Rocksdb也可以打开这个文件了。
 
 ## 下层导入
 
