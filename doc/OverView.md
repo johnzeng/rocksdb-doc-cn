@@ -1,5 +1,5 @@
 # 介绍
-RocksDB是Facebook的一个实验项目，目的是希望能开发一套能能在服务器压力下，真正发挥高速存储硬件（特别是Flash存储）性能的高效数据库系统。这是一个C++库，允许存储任意长度二进制kv数据。支持原子读写操作。
+RocksDB是Facebook的一个实验项目，目的是希望能开发一套能在服务器压力下，真正发挥高速存储硬件（特别是Flash存储）性能的高效数据库系统。这是一个C++库，允许存储任意长度二进制kv数据。支持原子读写操作。
 
 RocksDB依靠大量灵活的配置，使之能针对不同的生产环境进行调优，包括直接使用内存，使用Flash，使用硬盘或者HDFS。支持使用不同的压缩算法，并且有一套完整的工具供生产和调试使用。
 
@@ -12,21 +12,21 @@ RocksDB最初的设计理念就是其应该在高速存储设备以及服务器�
 
 ## 生产环境支持
 
-RocksDB设计阶段开始就附带哪捡的工具集合供生产环境部署和调试。主要的参数都应该可以调节以适应不用的硬件上跑的不同的应用程序。
+RocksDB设计阶段开始就附带内置的工具集合供生产环境部署和调试。主要的参数都应该可以调节以适应不用的硬件上跑的不同的应用程序。
 
 ## 兼容性
 新版本总是保持向后兼容，已有的应用程序不需要为RocksDB升级进行变更。参考 [RocksDB版本兼容性]()
 
 # 高度分层架构
-RocksDB是一种可以存储任意二进制kv数据的嵌入式存储。RocksDB按顺序组织所有数据，他们的通用操作是Get(key), Put(key), Delete(Key)以及NewIterator()
+RocksDB是一种可以存储任意二进制kv数据的嵌入式存储。RocksDB按顺序组织所有数据，他们的通用操作是Get(key), NewIterator(), Put(key, value), Delete(Key)以及SingleDelete(key)。
 
-RocksDB有三种基本的数据结构：mentable，sstfile以及logfile。mentable是一种内存数据结构——所有写入请求都会进入mentable，然后选择性进入logfile。logfile是一种有序写存储结构。当mentable被填满的时候，他会被刷到sstfile文件并存储起来，然后相关的logfile会在之后被安全地删除。sstfile内的数据都是排序好的，以便于根据key快速搜索。
+RocksDB有三种基本的数据结构：mentable，sstfile以及logfile。mentable是一种内存数据结构——所有写入请求都会进入mentable，然后选择性进入logfile。logfile是一个在存储上顺序写入的文件。当mentable被填满的时候，他会被刷到sstfile文件并存储起来，然后相关的logfile会在之后被安全地删除。sstfile内的数据都是排序好的，以便于根据key快速搜索。
 
 sstfile的详细格式参考[这里]()
 
 # 特性
 
-## 列族(column families)
+## 列族(Column Families)
 
 RocksDB支持将一个数据库实例按照许多列族进行分片。所有数据库创建的时候都会有一个用"default"命名的列族，如果某个操作不指定列族，他将操作这个default列族。
 
@@ -35,7 +35,7 @@ RocksDB在开启WAL的时候保证即使crash，列族的数据也能保持一�
 ## 更新操作
 调用Put API可以将一个键值对写入数据库。如果该键值已经存在于数据库内，之前的数据会被覆盖。调用Write API可以将多个key原子地写入数据库。数据库保证在一个write调用中，要么所有键值都被插入，要么全部都不被插入。如果其中的一些key在数据库中存在，之前的值会被覆盖。
 
-## get,iterators以及Snapshots
+## Gets,Iterators以及Snapshots
 
 键值对的数据都是按照二进制处理的。键值都没有长度的限制。Get API允许应用从数据库里面提取一个键值对的数据。MultiGet API允许应用一次从数据库获取一批数据。使用MultiGet API获取的所有数据保证相互之间的一致性（版本相同）。
 
