@@ -1,6 +1,6 @@
 # 基础操作
 
-Rocksdb库提供一个持久化的键值存储。健和值都可以是任意二进制数组。所有的键按爪一个用户定义的比较函数排列。
+Rocksdb库提供一个持久化的键值存储。键和值都可以是任意二进制数组。所有的键按照一个用户定义的比较函数排列。
 
 ## 打开一个数据库
 
@@ -20,19 +20,20 @@ Rocksdb库提供一个持久化的键值存储。健和值都可以是任意二�
 
 如果你希望在数据库存在的时候返回错误，在调用rocksdb::DB::Open调用前，增加下面这行。
 
+```cpp
 options.error_if_exists = true;
+```
 
 如果你正在从leveldb迁移到rocksdb，你可以使用rocksdb::LevelDBOptions把你的leveldb::Options对象转成rocksdb::Options对象，他有与leveldb::Options一样的功能。
 
 ```cpp
-#include "rocksdb/utilities/leveldb_options.h"
+  #include "rocksdb/utilities/leveldb_options.h"
 
   rocksdb::LevelDBOptions leveldb_options;
   leveldb_options.option1 = value1;
   leveldb_options.option2 = value2;
   ...
   rocksdb::Options options = rocksdb::ConvertOptions(leveldb_options);
-
 ```
 
 ## RocksDB选项
@@ -56,31 +57,40 @@ RocksDB自动将当前数据库使用的配置保存到数据库目录下的OPTI
 你可能已经注意到上面的rocksdb::Status类型。这个类型的值是大部分rocksdb的返回值，他有时会返回一个错误。你可以检测这个结果是不是ok，然后打印相关的错误信息：
 
 ```cpp
- rocksdb::Status s = ...;
-   if (!s.ok()) cerr << s.ToString() << end
-
+   rocksdb::Status s = ...;
+   if (!s.ok()) cerr << s.ToString() << endl;
 ```
 
 ## 关闭一个数据库
 
-当你使用完这个数据库，只需要删除这个数据库对象即可：
+当你使用完这个数据库，有2种方式可以关闭数据库：
+1. 只需要删除这个数据库对象，就可以释放资源。但如果在释放资源的过程中出现错误，可能会出现资源丢失的情况。
+2. 调用DB::Close()函数删除数据库对象，DB::Close()函数会返回状态Status，可以通过检查Status来确定关闭过程中是否存在错误。无论是否出现错误，DB::Close()都会释放所有资源。
 
+例如：
 ```cpp
   ... 按上面的描述打开数据库 ...
   ... 对这个数据库做一些操作 ...
   delete db;
 ```
+或
+```cpp
+  ... 按上面的描述打开数据库 ...
+  ... 对这个数据库做一些操作 ...
+  Status s = db->Close();
+  ... 记录状态 ...
+  delete db;
+```
 
-## 读与写
+## 读取
 
-数据库提供Put,Delete以及Get方法用于修改/查询数据库。例如，下面的代码将key1的值，移到key2。
+数据库提供Put，Delete，Get和MultiGet方法用于修改/查询数据库。例如，下面的代码将key1的值，移到key2。
 
 ```cpp
   std::string value;
   rocksdb::Status s = db->Get(rocksdb::ReadOptions(), key1, &value);
   if (s.ok()) s = db->Put(rocksdb::WriteOptions(), key2, value);
   if (s.ok()) s = db->Delete(rocksdb::WriteOptions(), key1);
-
 ```
 
 目前，值的大小必须小于4GB。RocksDB还允许使用 [单删除]()，这个在特定场景很有用。
@@ -88,16 +98,21 @@ RocksDB自动将当前数据库使用的配置保存到数据库目录下的OPTI
 每个Get请求至少需要使用一次从源到目的字符串的值memcpy拷贝。如果源在块缓存，你可以使用一个PinnableSlice来避免额外的拷贝。
 
 ```cpp
- PinnableSlice pinnable_val;
+  PinnableSlice pinnable_val;
   rocksdb::Status s = db->Get(rocksdb::ReadOptions(), key1, &pinnable_val);
-
 ```
 
 源数据会在pinnable_val被销毁或者::Reset被调用的时候释放。参考[这里]()
 
-## 原子化更新
+MultiGet可以用来从数据库读取多个键值。
 
-主意，如果进程在key2的Put调用之后，在删除key1之前，崩溃了，那么相同的值会被保存到多个键下面。这种问题可以通过WriteBatch类来原子地写入一批更新：
+更深入地讨论MultiGet的性能，可以参考[MultiGet性能]()。
+
+## 写入
+
+### 原子更新
+
+注意，如果进程在key2的Put调用之后但在删除key1之前崩溃了，那么相同的值会被保存到多个键下面。这种问题可以通过WriteBatch类来原子地写入一批更新：
 
 ```cpp
   #include "rocksdb/write_batch.h"
@@ -113,11 +128,11 @@ RocksDB自动将当前数据库使用的配置保存到数据库目录下的OPTI
 
 ```
 
-WriteBatch保存一个数据库编辑序列，这些批处理的修改会被按顺序应用于数据库。主意我们在Put之前使用Delete，所以如果key1和key2相同，我们不会错误地将这个值删掉。
+WriteBatch保存一个数据库编辑序列，这些批处理的修改会被按顺序应用于数据库。注意我们在Put之前使用Delete，所以如果key1和key2相同，我们不会错误地将这个值删掉。
 
-除了他原子化的有点，WriteBatch还可以通过将大量的单独修改合并到一个批处理，以此加速批量更新。
+除了原子操作的优点，WriteBatch还可以通过将大量的单独修改合并到一个批处理，以此加速批量更新。
 
-## 批量写
+### 批量写
 
 rocksdb的写请求默认都是同步的：他在进程把写请求压入操作系统后返回。从操作系统的内存写入之下的持续存储介质的过程是异步的。可以对某个特定的写请求使用sync标识位，使之在数据完全被写入持久化存储介质之前都不会反回。（在Posix系统，可以在写操作返回前，调用fsync或者fdatasync或者msync。）
 
@@ -127,25 +142,26 @@ rocksdb的写请求默认都是同步的：他在进程把写请求压入操作�
   db->Put(write_options, ...);
 ```
 
-## 异步写
+### 异步写
 
-通常异步写会比同步写快上千倍。异步写的缺点是机器崩溃的时候可能会造成最后一个更新操作丢失。主意，如果只是写操作的进程崩溃，即使sync标示没有设置为真，也不会造成数据丢失，在他的写操作返回成功前，更新操作会从进程的内存压入操作系统。
+通常异步写会比同步写快上千倍。异步写的缺点是机器崩溃的时候可能会造成最后一个更新操作丢失。注意，如果只是写操作的进程崩溃，即使sync标示没有设置为真，也不会造成数据丢失，在他的写操作返回成功前，更新操作会从进程的内存压入操作系统。
 
-异步写通常可以被安全地使用。例如，在加载一大批数据的时候，你可以通过重启批量加载操作来处理由于崩溃导致的数据丢失。一个混合方案是，你可以每隔几个写操作，就使用一次同步写，当崩溃发生的时候，批量导入可以从上一次运行的最后一次同步写那里继续。（同步写可以更新一个标记，用于纪录下次重启的时候应该从哪里开始）。
+异步写通常可以被安全地使用。例如，在加载一大批数据的时候，你可以通过重启批量加载操作来处理由于崩溃导致的数据丢失。一个混合方案是，你可以每隔几个写操作，就使用一次同步写，当崩溃发生的时候，批量导入可以从上一次运行的最后一次同步写那里继续。（同步写可以更新一个标记，用于记录下次重启的时候应该从哪里开始）。
 
 WriteBatch提供另一个异步写的方案。可以把许多更新打包在一个WriteBatch里面，然后一次性用一个同步写导入数据库。（write_options.sync被设置为真）。同步写的开销会被该批量写的所有写请求均匀分摊。
 
 我们还提供一个办法，在有必要的时候，可以彻底关闭WAL。如果你把write_option.disableWAL设置为true，写操作完全不会写日志，并且在进程崩溃的时候出现数据丢失。
 
-## 同步
+## 并发
 
-一个数据库可能同时只能被一个进程打开。RocksDB的实现方式是，从操作系统那里申请一个锁，以此来阻止错误的写操作。在单进程里面，同一个rocksdb::DB对象可以被多个同步线程共享。举个例子，不同的线程可以同时对同一个数据库调用写操作，迭代遍历操作或者Get操作，而且需要不用使用额外的同步锁（rocksdb的实现会自动进行同步）。然而其他对象（比如迭代器，WriteBatch）需要额外的同步机制保证线程同步。如果两个线程共同使用这些对象，他们必须使用自己的锁协议保证访问的同步。更多的细节会在公共头文件给出。
+一个数据库可能同时只能被一个进程打开。RocksDB的实现方式是，从操作系统那里申请一个锁，以此来阻止错误的写操作。在单进程里面，同一个rocksdb::DB对象可以被多个同步线程共享。举个例子，不同的线程可以同时对同一个数据库调用写操作，迭代遍历操作或者Get操作，而且不需要使用额外的同步锁（rocksdb的实现会自动进行同步）。然而其他对象（比如迭代器，WriteBatch）需要额外的同步机制保证线程同步。如果两个线程共同使用这些对象，他们必须使用自己的锁协议保证访问的同步。更多的细节会在公共头文件给出。
 
 ## 合并操作符
 合并操作符为 读－修改－写 操作提供高效的支持。更多的接口和实现参考：
 
 - [合并操作符]()
 - [合并操作符开发]()
+- [获取合并操作数]()
 
 ## 迭代器
 
@@ -158,6 +174,10 @@ WriteBatch提供另一个异步写的方案。可以把许多更新打包在一�
   }
   assert(it->status().ok()); // Check for any errors found during the scan
   delete it;
+```
+下面的例子展示如何处理从start到limit左闭右开区间[start, limt)范围内的键值：
+
+```cpp
 The following variation shows how to process just the keys in the range [start, limit):
   for (it->Seek(start);
        it->Valid() && it->key().ToString() < limit;
@@ -165,20 +185,18 @@ The following variation shows how to process just the keys in the range [start,
     ...
   }
   assert(it->status().ok()); // Check for any errors found during the scan
-
 ```
 
-你还可以通过反向的顺序处理这些项目。（警告：反响迭代器会比正向迭代器慢一些）
+你还可以通过反向的顺序处理这些项目。（警告：反向迭代器会比正向迭代器慢一些）
 
 ```cpp
 for (it->SeekToLast(); it->Valid(); it->Prev()) {
     ...
   }
   assert(it->status().ok()); // Check for any errors found during the scan
-
 ```
 
-这里有一个例子展示如何以逆序处理一个范围(limit,start]的键
+这里有一个例子展示如何以逆序处理一个范围(limit,start]的键：
 
 ```cpp
   for (it->SeekForPrev(start);
@@ -186,9 +204,7 @@ for (it->SeekToLast(); it->Valid(); it->Prev()) {
        it->Prev()) {
     ...
   }
-
-	assert(it->status().ok()); // Check for any errors found during the scan
-
+  assert(it->status().ok()); // Check for any errors found during the scan
 ```
 
 参考 [SeekForPrev]()
@@ -199,9 +215,9 @@ for (it->SeekToLast(); it->Valid(); it->Prev()) {
 
 ## 快照
 
-快照在整个kv存储之上提供一个一致的，制度的视图。 ReadOptions::snapshot不是NULL的时候意味着这个读操作应该在某个特定的数据库状态版本进行。
+快照在整个kv存储之上提供一个一致的只读视图。ReadOptions::snapshot不是NULL的时候意味着这个读操作应该在某个特定的数据库状态版本进行。
 
-如果 ReadOptions::snapshot是NULL，读操作隐式地认为使用当前数据库状态进行读操作。
+如果ReadOptions::snapshot是NULL，读操作隐式地认为使用当前数据库状态进行读操作。
 
 快照通过DB::GetSnapshot方法获得：
 
@@ -213,13 +229,13 @@ for (it->SeekToLast(); it->Valid(); it->Prev()) {
   ... read using iter to view the state when the snapshot was created ...
   delete iter;
   db->ReleaseSnapshot(options.snapshot);
-
 ```
 
 注意，当一个快照不再需要了，他应该通过DB::ReleaseSnapshot接口释放。这样才能让数据库的实现摆脱那些只为了快照保留下来的数据。
 
 ## Slice
-上面调用的it->key()和it->value()的返回值类型是rocksdb::Slice类型。Slice是一个简单的结构体，他有一个长度字段和一个指针指向一个外部的字节数组。相比返回一个std::string类向，返回一个Slice是一个开销更低的选项，因为我们不必另外去拷贝那些可能会很大的键值对。另外，rocsdb的方法不会返回以null结束的c风格字符串，因为rocksdb的键值都是允许使用'\0'字符的。
+
+上面调用的it->key()和it->value()的返回值类型是rocksdb::Slice类型。Slice是一个简单的结构体，他有一个长度字段和一个指针指向一个外部的字节数组。相比返回一个std::string类型，返回一个Slice是一个开销更低的选项，因为我们不必另外去拷贝那些可能会很大的键值对。另外，rocksdb的方法不会返回以null结束的c风格字符串，因为rocksdb的键值都是允许使用'\0'字符的。
 
 c++字符串和null结束的c风格字符串，都可以简单地转换为slice：
 
@@ -231,13 +247,13 @@ c++字符串和null结束的c风格字符串，都可以简单地转换为slice�
 
 ```
 
-一个Slice可以简单地转换会c++字符串：
+一个Slice可以简单地转换回c++字符串：
 
 ```cpp
    std::string str = s1.ToString();
    assert(str == std::string("hello"));
 ```
-使用slice的时候要小心，因为需要由调用者来保证外部的字节数组在Slice使用期间存活。比如，下面这个代码就是有bug的：
+使用Slice的时候要小心，因为需要由调用者来保证外部的字节数组在Slice使用期间存活。比如，下面这个代码就是有bug的：
 
 ```cpp
    rocksdb::Slice slice;
