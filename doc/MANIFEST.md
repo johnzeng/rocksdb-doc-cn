@@ -15,9 +15,11 @@ MANIFEST是一个RocksDB状态变更的事务日志。MANIFEST由manifest日志�
 
 在系统（重新）启动的时候，最新的manifest日志文件会包含一个一致的ROCKSDB的状态。任何对RocksDB状态修改的子序列都会被记录到manifest日志文件中。当一个manifest日志超过特定的大小，一个新的manifest日志文件会更新，且保证刷盘到文件系统。成功更新CURRENT文件之后，就的manifest文件就会被删掉。
 
+```
 MANIFEST={CURRENT, MANIFEST-<seq-no>*}
 CURRENT = 指向当前manifest日志的文件指针
 MANIFEST-<seq-no> = 包含RocksDB状态的快照以及后续的修改
+```
 
 # 版本（version）编辑
 
@@ -27,7 +29,6 @@ MANIFEST-<seq-no> = 包含RocksDB状态的快照以及后续的修改
 版本编辑 = 任何RocksDB状态变更
 版本 = {版本编辑*}
 manifest日志文件 = {版本，版本编辑*} = {版本编辑*}
-
 ```
 
 # 版本编辑布局
@@ -63,7 +64,6 @@ string - 带长度前缀的字符串数据：
 | Record ID   | Variable size record data |
 +-------------+------ .......... ---------+
 <-- Var32 --->|<-- varies by type       -->
-
 ```
 
 ## 版本编辑记录类型以及布局
@@ -79,7 +79,6 @@ string - 带长度前缀的字符串数据：
 | kComparator | data           |
 +-------------+----------------+
 <-- Var32 --->|<-- String   -->|
-
 ```
 
 日志数量编辑记录：
@@ -132,7 +131,6 @@ rocksdb最新的seq number
 | kMaxColumnFamily    | log number     |
 +---------------------+----------------+
 <-- Var32         --->|<-- Var32    -->|
-
 ```
 
 删除文件编辑记录：
@@ -214,7 +212,6 @@ rocksdb最新的seq number
 | kColumnFamilyDrop   |
 +---------------------+
 <-- Var32         --->|
-
 ```
 
 
