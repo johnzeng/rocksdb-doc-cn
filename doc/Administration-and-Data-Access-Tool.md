@@ -61,7 +61,7 @@ ldb命令行工具提供多种数据访问和数据库管理命令。下面列�
 $ ./ldb --db=/tmp/test_db dump --hex > /tmp/dbdump
 ```
 
-加载十六进制格式的数据进新的rocksdbdb库
+加载十六进制格式的数据进新的rocksdb库
 
 ```shell
 $ cat /tmp/dbdump | ./ldb --db=/tmp/test_db_new load --hex --compression_type=bzip2 --block_size=65536 --create_if_missing --disable_wal
