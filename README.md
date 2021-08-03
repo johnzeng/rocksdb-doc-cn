@@ -67,6 +67,7 @@
     - 日志以及监控
         - [日志](doc/Logger.md)
         - [统计](doc/Statistics.md)
+        - [压缩统计和数据库状态](doc/Compaction-Stats-and-DB-Status.md)
         - [性能与IO上下文](doc/Perf-Context-and-IO-Stats-Context.md)
         - [事件监听器](doc/EventListener.md)
 - 工具/实用助手
