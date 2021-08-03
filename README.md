@@ -70,6 +70,7 @@
         - [性能与IO上下文](doc/Perf-Context-and-IO-Stats-Context.md)
         - [事件监听器](doc/EventListener.md)
 - 工具/实用助手
+    - [数据管理和访问工具](doc/Administration-and-Data-Access-Tool.md)
     - [checkpoint](doc/Checkpoints.md)
     - [如何备份RocksDB](doc/How-to-backup-RocksDB.md)
 - 实现细节
