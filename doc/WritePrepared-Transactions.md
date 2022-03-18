@@ -6,7 +6,7 @@ RocksDB同时支持乐观和悲观两种并发控制。悲观事务使用锁来�
 
 # 备选方案：WritePrepared和WriteUnprepared
 
-为了解决冗长的提交问题，我们应该在2PC的更早的阶段进行memtable的写入，这样提交阶段会变得更轻量，更快速。2PC由 写阶段，当transaction ::Put被调用的时候，  准备阶段，此时::Prepare被调用（DB承诺，后面如果要求提交事务，他就能提交了），以及 提交阶段， 这里::Commit 被调用，然后事务会被写入，并且对其他读者可见   组成（三个阶段，分别是写，准备，提交）。为了保证提交阶段轻量，memtable的写可以在::Prepare 或者 ::Put 阶段完成，他们分别产生了WritePrepared和WriteUnprepared两种写策略。带来的问题是，当另一个事务在读数据的时候，他需要一个办法来区分数据是不是已经提交，如果是，他们是不是在当前事务开始前提交的，比如说，在读事务的快照的时候。WritePrepared会有缓存数据的问题，对于大数据量的事务会构成内存瓶颈。但是他为从WriteCommitted迁移到WriteUnprepared提供了一个非常好的过渡。我们会在这了解释WritePrepared策略的设计。用于支持WriteUnprepared的设计可以参考[这里](WriteUnprepared-Transactions.md)
+为了解决冗长的提交问题，我们应该在2PC的更早的阶段进行memtable的写入，这样提交阶段会变得更轻量，更快速。2PC由写阶段，当transaction ::Put被调用的时候，准备阶段，此时::Prepare被调用（DB承诺，后面如果要求提交事务，他就能提交了），以及提交阶段， 这里::Commit 被调用，然后事务会被写入，并且对其他读者可见组成（三个阶段，分别是写，准备，提交）。为了保证提交阶段轻量，memtable的写可以在::Prepare 或者 ::Put 阶段完成，他们分别产生了WritePrepared和WriteUnprepared两种写策略。带来的问题是，当另一个事务在读数据的时候，他需要一个办法来区分数据是不是已经提交，如果是，他们是不是在当前事务开始前提交的，比如说，在读事务的快照的时候。WritePrepared会有缓存数据的问题，对于大数据量的事务会构成内存瓶颈。但是他为从WriteCommitted迁移到WriteUnprepared提供了一个非常好的过渡。我们会在这了解释WritePrepared策略的设计。用于支持WriteUnprepared的设计可以参考[这里](WriteUnprepared-Transactions.md)
 
 # 简单聊聊WritePrepared
 
@@ -49,7 +49,7 @@ CommitCache是一个定长，内存数组，记录提交数据。为了使用一
 
 当我们有两个写请求队列（two_write_queues=true），那么主写队列可以同时向WAL和memtable写，而第二写队列只能写WAL，这个会被用于在WritePrepared事务中写提交标记。在这个场景下，主队列（以及他的PreReleaseCallback回调）总是用于准备项，而第二队列（以及他的PreReleaseCallback回调）总是用于提交。这样 i)避免两个队列的竞争 ii)维护了PreparedHeap的顺序增加，以及 iii)简化代码，避免并发插入到CommitCache（以及从中淘汰数据的代码）。
 
-由于两个队列都能在另一个没有使用完预分配的较小的序列号的时候增加他们的最后序列号，这时候可能会构成一个原子化问题。为了解决这个问题，我们引入了 最后发布的序列号 这个概念，会在创建快照的时候使用。当我们有一个写队列的时候，他跟最后的序列号一样。当我们有两个队列的时候，这就是最后提交了的项目（有第二个队列执行）。这个措施会影响到非2PC事务，因为他们会被切分为两步： i)通过主队列写memtable， ii)通过第二队列提交并发布序列号。
+由于两个队列都能在另一个没有使用完预分配的较小的序列号的时候增加他们的最后序列号，这时候可能会构成一个原子化问题。为了解决这个问题，我们引入了最后发布的序列号这个概念，会在创建快照的时候使用。当我们有一个写队列的时候，他跟最后的序列号一样。当我们有两个队列的时候，这就是最后提交了的项目（有第二个队列执行）。这个措施会影响到非2PC事务，因为他们会被切分为两步： i)通过主队列写memtable， ii)通过第二队列提交并发布序列号。
 
 ## IsInSnapshot
 
