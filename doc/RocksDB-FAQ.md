@@ -40,7 +40,7 @@
 
 **问:我可以保存一个snapshot，然后回滚rocksDB到这个状态吗？**
 
-答：可以，请使用[BackupEngine](How-to-backup-RocksDB%3F.md)或者[Checkpoints](Checkpoints.md)接口
+答：可以，请使用[BackupEngine](How-to-backup-RocksDB.md)或者[Checkpoints](Checkpoints.md)接口
 
 **问:如何快速将数据载入rocksdb**
 
