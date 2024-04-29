@@ -75,7 +75,7 @@ $ ./ldb --db=/tmp/test_db_new compact --compression_type=bzip2 --block_size=6553
 
 你可以通过--column_family=<string>来指定你要查询的column family。
 
---try_load_options 将会尝试加载配置文件来打开数据库。如果你总是要用这个配置去打开数据库，这是一个好方法。如果你使用默认配置打开数据库，它可能破坏LSM-Tree结构并导致无法自动回复。
+--try_load_options 将会尝试加载配置文件来打开数据库。如果你总是要用这个配置去打开数据库，这是一个好方法。如果你使用默认配置打开数据库，它可能破坏LSM-Tree结构并导致无法自动恢复。
 
 # SST dump tool
 
