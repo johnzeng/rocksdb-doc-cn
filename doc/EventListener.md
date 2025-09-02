@@ -12,7 +12,7 @@
 std::vector<std::shared_ptr<EventListener>> listeners;
 ```
 
-如果详见听一个rocksdb实例或者一个列族，可以通过简单增加自定义的EventListener到ColumnFamilyOptions::listeners，然后使用这个options来打开DB。
+如果想监听一个rocksdb实例或者一个列族，可以通过简单增加自定义的EventListener到ColumnFamilyOptions::listeners，然后使用这个options来打开DB。
 
 ```cpp
 // listen to a column family of a rocksdb instance
